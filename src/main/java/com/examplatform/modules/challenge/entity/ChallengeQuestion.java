@@ -1,7 +1,7 @@
 package com.examplatform.modules.challenge.entity;
 
 import com.examplatform.common.entity.BaseEntity;
-import com.examplatform.modules.challenge.entity.GuidePracticeMcq;
+import com.examplatform.modules.guide.entity.GuidePracticeMcq;
 import jakarta.persistence.*;
 import lombok.*;
 
