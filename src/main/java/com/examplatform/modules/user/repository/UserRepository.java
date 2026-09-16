@@ -35,4 +35,13 @@ public interface UserRepository extends JpaRepository<User, String> {
     List<User> searchUsers(@Param("kw") String kw);
 
 
+
+    @Query("SELECT u.id FROM User u")
+    java.util.List<String> findAllUserIds();
+
+    @Query("SELECT u.id FROM User u WHERE u.educationLevel = ?1")
+    java.util.List<String> findUserIdsByEducationLevel(User.EducationLevel educationLevel);
+
+    @Query("SELECT u.id FROM User u WHERE u.targetExam = ?1")
+    java.util.List<String> findUserIdsByTargetExam(User.TargetExam targetExam);
 }

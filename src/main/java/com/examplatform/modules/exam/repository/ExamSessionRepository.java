@@ -40,4 +40,7 @@ public interface ExamSessionRepository extends JpaRepository<ExamSession, String
     @Query("SELECT AVG(es.percentage) FROM ExamSession es WHERE es.userId = ?1")
     Double getAveragePercentage(String userId);
 
+
+    @Query("SELECT DISTINCT es.userId FROM ExamSession es WHERE es.specialExamId = ?1")
+    java.util.List<String> findDistinctUserIdsBySpecialExamId(String specialExamId);
 }

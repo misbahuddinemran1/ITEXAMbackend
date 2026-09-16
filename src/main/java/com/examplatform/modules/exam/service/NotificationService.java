@@ -2,9 +2,12 @@ package com.examplatform.modules.exam.service;
 
 import com.examplatform.modules.exam.dto.NotificationResponse;
 import com.examplatform.modules.exam.entity.UserNotification;
+import com.examplatform.modules.exam.repository.NotificationGroupProjection;
 import com.examplatform.modules.exam.repository.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,8 +53,19 @@ public class NotificationService {
                 });
     }
 
+    // পুরনো মেথড — backward compatible
     public void sendNotification(String userId, UserNotification.NotificationType type,
                                  String title, String body) {
+        sendNotification(userId, type, title, body, null, null);
+    }
+
+    public void sendNotification(String userId, UserNotification.NotificationType type,
+                                 String title, String body, LocalDateTime expiryDate) {
+        sendNotification(userId, type, title, body, expiryDate, null);
+    }
+
+    public void sendNotification(String userId, UserNotification.NotificationType type,
+                                 String title, String body, LocalDateTime expiryDate, String batchId) {
         UserNotification notification = UserNotification.builder()
                 .id(UUID.randomUUID().toString())
                 .userId(userId)
@@ -60,8 +74,22 @@ public class NotificationService {
                 .body(body)
                 .isRead(false)
                 .deliveryChannel(UserNotification.DeliveryChannel.IN_APP)
+                .expiryDate(expiryDate)
+                .batchId(batchId)
                 .build();
 
         userNotificationRepository.save(notification);
+    }
+
+    public List<NotificationGroupProjection> getGroupedNotifications() {
+        return userNotificationRepository.findGroupedNotifications();
+    }
+
+    public void deleteBatch(String batchKey) {
+        userNotificationRepository.deleteByBatchKey(batchKey);
+    }
+
+    public List<UserNotification> getAllNotifications() {
+        return userNotificationRepository.findAllOrderBySentAtDesc();
     }
 }
