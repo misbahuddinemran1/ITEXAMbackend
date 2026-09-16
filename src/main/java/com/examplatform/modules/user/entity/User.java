@@ -56,8 +56,9 @@ private String session;
     @Column(name = "education_level")
     private EducationLevel educationLevel;
 
-    @Column(name = "target_exam", length = 100)
-    private String targetExam;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_exam")
+    private TargetExam targetExam;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider", nullable = false)
@@ -128,13 +129,19 @@ private String session;
     }
 
    public enum EducationLevel {
-    CLASS_9,
-    NEW_CLASS_10,
-    SSC,
-    HSC_1ST_YEAR,
-    HSC_2ND_YEAR,
-    HONORS,
-    MASTERS,
-    OTHER
-}
+        HONOURS,
+        ENGINEERING,
+        DEGREE,
+        MASTERS,
+        DIPLOMA,
+        OTHER
+    }
+
+    public enum TargetExam {
+        BCS_ICT,
+        NTRCA_ICT,
+        BANK_IT,
+        GOVT_IT,
+        OTHER
+    }
 }

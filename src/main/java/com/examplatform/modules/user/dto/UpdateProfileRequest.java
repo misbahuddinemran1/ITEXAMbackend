@@ -12,6 +12,6 @@ public class UpdateProfileRequest {
     private String gender;          // MALE, FEMALE, OTHER
     private LocalDate dateOfBirth;
     private String district;
-    private String educationLevel;  // SSC, HSC, HONORS, MASTERS, OTHER
-    private String targetExam;
+    private String educationLevel;  // HONOURS, ENGINEERING, DEGREE, MASTERS, DIPLOMA, OTHER
+    private String targetExam;  // BCS_ICT, NTRCA_ICT, BANK_IT, GOVT_IT, OTHER
 }

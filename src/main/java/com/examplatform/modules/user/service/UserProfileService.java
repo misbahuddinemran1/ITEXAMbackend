@@ -49,7 +49,13 @@ public class UserProfileService {
             user.setDistrict(request.getDistrict());
         }
         if (request.getTargetExam() != null) {
-            user.setTargetExam(request.getTargetExam());
+            try {
+                user.setTargetExam(
+                        User.TargetExam.valueOf(request.getTargetExam().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new ValidationException(
+                        "Target Exam ভুল — BCS_ICT, NTRCA_ICT, BANK_IT, GOVT_IT, OTHER দিতে হবে");
+            }
         }
         if (request.getGender() != null) {
             try {
@@ -64,7 +70,7 @@ public class UserProfileService {
                     User.EducationLevel.valueOf(request.getEducationLevel().toUpperCase()));
             } catch (IllegalArgumentException e) {
                 throw new ValidationException(
-                    "Education Level ভুল — SSC, HSC, HONORS, MASTERS, OTHER দিতে হবে");
+                    "Education Level ভুল — HONOURS, ENGINEERING, DEGREE, MASTERS, DIPLOMA, OTHER দিতে হবে");
             }
         }
 
@@ -117,7 +123,7 @@ public class UserProfileService {
                 .district(user.getDistrict())
                 .educationLevel(user.getEducationLevel() != null
                         ? user.getEducationLevel().name() : null)
-                .targetExam(user.getTargetExam())
+                .targetExam(user.getTargetExam() != null ? user.getTargetExam().name() : null)
                 .authProvider(user.getAuthProvider().name())
                 .isEmailVerified(user.isEmailVerified())
                 .isPhoneVerified(user.isPhoneVerified())
