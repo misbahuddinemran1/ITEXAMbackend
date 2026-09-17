@@ -3,6 +3,8 @@ package com.examplatform.modules.exam.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "user_notifications", indexes = {
@@ -35,8 +37,9 @@ public class UserNotification {
     @Column(name = "body", columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "metadata", columnDefinition = "JSONB")
-private String metadata;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    private String metadata;
 
     @Column(name = "is_read")
     private boolean isRead;
