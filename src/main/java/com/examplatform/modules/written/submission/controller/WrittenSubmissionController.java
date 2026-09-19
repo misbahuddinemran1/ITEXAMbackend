@@ -99,7 +99,7 @@ public class WrittenSubmissionController {
             Map<String, Object> item = new HashMap<>();
             item.put("questionId", t.getQuestion().getId());
             item.put("questionOrder", t.getQuestion().getQuestionOrder());
-            item.put("part", t.getPart().name());
+            item.put("partOrder", t.getPartOrder());
             item.put("transcribedText", t.getTranscribedText());
             result.add(item);
         }
