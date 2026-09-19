@@ -60,7 +60,7 @@ private String model;
 
     private String buildPrompt(String stimulus, String questionText, int maxMark) {
         return """
-                তুমি একজন অভিজ্ঞ পরীক্ষক। নিচের সৃজনশীল প্রশ্নের একটা আদর্শ উত্তর (model answer) লিখে দাও।
+                তুমি একজন অভিজ্ঞ পরীক্ষক। নিচের লিখিত প্রশ্নের একটা আদর্শ উত্তর (model answer) লিখে দাও।
 
                 উদ্দীপক: %s
 
