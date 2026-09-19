@@ -6,6 +6,7 @@ import com.examplatform.modules.written.question.entity.WrittenQuestion;
 import com.examplatform.modules.written.question.repository.WrittenQuestionRepository;
 import com.examplatform.modules.written.question.service.GeminiAnswerGeneratorService;
 import com.examplatform.modules.written.questionbank.entity.WrittenQuestionBank;
+import com.examplatform.modules.written.questionbank.entity.WrittenQuestionBankPart;
 import com.examplatform.modules.written.questionbank.mapper.WrittenQuestionBankMapper;
 import com.examplatform.modules.written.questionbank.repository.WrittenQuestionBankRepository;
 import com.examplatform.modules.written.questionbank.request.AttachToExamRequest;
@@ -60,24 +61,14 @@ public class WrittenQuestionBankService {
 
     private void generateAllAiAnswers(WrittenQuestionBank q) {
         try {
-            if (notBlank(q.getPartAQuestion()) && q.getPartAMaxMark() != null) {
-                q.setPartAAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartAQuestion(), q.getPartAMaxMark().intValue()));
-            }
-            if (notBlank(q.getPartBQuestion()) && q.getPartBMaxMark() != null) {
-                q.setPartBAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartBQuestion(), q.getPartBMaxMark().intValue()));
-            }
-            if (notBlank(q.getPartCQuestion()) && q.getPartCMaxMark() != null) {
-                q.setPartCAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartCQuestion(), q.getPartCMaxMark().intValue()));
-            }
-            if (notBlank(q.getPartDQuestion()) && q.getPartDMaxMark() != null) {
-                q.setPartDAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartDQuestion(), q.getPartDMaxMark().intValue()));
+            for (WrittenQuestionBankPart part : q.getParts()) {
+                if (notBlank(part.getQuestionText()) && part.getMaxMark() != null) {
+                    part.setAiAnswer(geminiService.generateReferenceAnswer(
+                            q.getStimulus(), part.getQuestionText(), part.getMaxMark().intValue()));
+                }
             }
         } catch (Exception e) {
-            // AI ফেইল করলেও bank question সেভ হোক, পরে admin manually generate/edit করতে পারবে
+            // AI ফেইল করলেও bank question সেভ হোক
         }
     }
 
@@ -135,54 +126,28 @@ public class WrittenQuestionBankService {
         return createdIds;
     }
 
-    /**
-     * একটা নির্দিষ্ট Part এর জন্য AI দিয়ে answer generate করে —
-     * কিন্তু সেভ করে না, শুধু preview হিসেবে ফেরত দেয়।
-     */
-    public String generatePartAnswer(String id, String part) {
+    public String generatePartAnswer(String id, int partOrder) {
         WrittenQuestionBank q = getBankOrThrow(id);
-        String questionText;
-        BigDecimal maxMark;
-        switch (part) {
-            case "A" -> {
-                questionText = q.getPartAQuestion();
-                maxMark = q.getPartAMaxMark();
-            }
-            case "B" -> {
-                questionText = q.getPartBQuestion();
-                maxMark = q.getPartBMaxMark();
-            }
-            case "C" -> {
-                questionText = q.getPartCQuestion();
-                maxMark = q.getPartCMaxMark();
-            }
-            case "D" -> {
-                questionText = q.getPartDQuestion();
-                maxMark = q.getPartDMaxMark();
-            }
-            default -> throw new IllegalArgumentException("Invalid part: " + part);
-        }
-        if (questionText == null || questionText.isBlank() || maxMark == null) {
+        WrittenQuestionBankPart part = findPart(q, partOrder);
+        if (!notBlank(part.getQuestionText()) || part.getMaxMark() == null) {
             throw new IllegalArgumentException("এই Part এর প্রশ্ন বা মার্ক সেট করা নেই, আগে Save করুন");
         }
-        return geminiService.generateReferenceAnswer(q.getStimulus(), questionText, maxMark.intValue());
+        return geminiService.generateReferenceAnswer(q.getStimulus(), part.getQuestionText(), part.getMaxMark().intValue());
     }
 
-    /**
-     * Admin প্রিভিউ দেখে পছন্দ করলে এই answer টা নির্দিষ্ট Part এ সেভ করে।
-     */
     @Transactional
-    public BankQuestionResponse saveAiAnswer(String id, String part, String aiAnswer) {
+    public BankQuestionResponse saveAiAnswer(String id, int partOrder, String aiAnswer) {
         WrittenQuestionBank q = getBankOrThrow(id);
-        switch (part) {
-            case "A" -> q.setPartAAiAnswer(aiAnswer);
-            case "B" -> q.setPartBAiAnswer(aiAnswer);
-            case "C" -> q.setPartCAiAnswer(aiAnswer);
-            case "D" -> q.setPartDAiAnswer(aiAnswer);
-            default -> throw new IllegalArgumentException("Invalid part: " + part);
-        }
+        findPart(q, partOrder).setAiAnswer(aiAnswer);
         WrittenQuestionBank saved = bankRepository.save(q);
         return bankMapper.toResponse(saved);
+    }
+
+    private WrittenQuestionBankPart findPart(WrittenQuestionBank q, int partOrder) {
+        return q.getParts().stream()
+                .filter(p -> p.getPartOrder() == partOrder)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid part: " + partOrder));
     }
 
     private WrittenQuestionBank getBankOrThrow(String id) {

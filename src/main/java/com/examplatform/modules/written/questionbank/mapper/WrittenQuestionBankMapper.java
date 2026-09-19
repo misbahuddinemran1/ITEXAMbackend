@@ -7,13 +7,21 @@ import com.examplatform.modules.taxonomy.repository.ChapterRepository;
 import com.examplatform.modules.taxonomy.repository.SubjectRepository;
 import com.examplatform.modules.taxonomy.repository.TopicRepository;
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
+import com.examplatform.modules.written.question.entity.WrittenQuestionPart;
 import com.examplatform.modules.written.questionbank.entity.WrittenQuestionBank;
+import com.examplatform.modules.written.questionbank.entity.WrittenQuestionBankPart;
+import com.examplatform.modules.written.questionbank.request.BankPartRequest;
 import com.examplatform.modules.written.questionbank.request.CreateBankQuestionRequest;
 import com.examplatform.modules.written.questionbank.request.UpdateBankQuestionRequest;
+import com.examplatform.modules.written.questionbank.response.BankPartResponse;
 import com.examplatform.modules.written.questionbank.response.BankQuestionResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @Component
@@ -25,7 +33,7 @@ public class WrittenQuestionBankMapper {
     private final TopicRepository topicRepository;
 
     public WrittenQuestionBank toEntity(CreateBankQuestionRequest req) {
-        return WrittenQuestionBank.builder()
+        WrittenQuestionBank bank = WrittenQuestionBank.builder()
                 .subject(findSubject(req.getSubjectId()))
                 .chapter(findChapter(req.getChapterId()))
                 .topic(findTopic(req.getTopicId()))
@@ -34,29 +42,12 @@ public class WrittenQuestionBankMapper {
                 .isBoardQuestion(req.isBoardQuestion())
                 .board(req.getBoard())
                 .examYear(req.getExamYear())
-                .partAQuestion(req.getPartAQuestion())
-                .partAModelAnswer(req.getPartAModelAnswer())
-                .partAMarkingScheme(req.getPartAMarkingScheme())
-                .partAMaxMark(req.getPartAMaxMark())
-                .partBQuestion(req.getPartBQuestion())
-                .partBModelAnswer(req.getPartBModelAnswer())
-                .partBMarkingScheme(req.getPartBMarkingScheme())
-                .partBMaxMark(req.getPartBMaxMark())
-                .partCQuestion(req.getPartCQuestion())
-                .partCModelAnswer(req.getPartCModelAnswer())
-                .partCMarkingScheme(req.getPartCMarkingScheme())
-                .partCMaxMark(req.getPartCMaxMark())
-                .partDQuestion(req.getPartDQuestion())
-                .partDModelAnswer(req.getPartDModelAnswer())
-                .partDMarkingScheme(req.getPartDMarkingScheme())
-                .partDMaxMark(req.getPartDMaxMark())
                 .build();
+
+        bank.setParts(buildParts(bank, req.getParts(), null));
+        return bank;
     }
 
-    /**
-     * Partial update — request এ যেই field null না, সেটাই update হবে।
-     * partXAiAnswer সরাসরি দিলে কোনো AI/Gemini call ছাড়াই manual override হবে।
-     */
     public void applyUpdate(WrittenQuestionBank q, UpdateBankQuestionRequest req) {
         if (req.getSubjectId() != null) q.setSubject(findSubject(req.getSubjectId()));
         if (req.getChapterId() != null) q.setChapter(findChapter(req.getChapterId()));
@@ -71,36 +62,58 @@ public class WrittenQuestionBankMapper {
         if (req.getBoard() != null) q.setBoard(req.getBoard());
         if (req.getExamYear() != null) q.setExamYear(req.getExamYear());
 
-        // Part A
-        if (req.getPartAQuestion() != null) q.setPartAQuestion(req.getPartAQuestion());
-        if (req.getPartAModelAnswer() != null) q.setPartAModelAnswer(req.getPartAModelAnswer());
-        if (req.getPartAAiAnswer() != null) q.setPartAAiAnswer(req.getPartAAiAnswer());
-        if (req.getPartAMarkingScheme() != null) q.setPartAMarkingScheme(req.getPartAMarkingScheme());
-        if (req.getPartAMaxMark() != null) q.setPartAMaxMark(req.getPartAMaxMark());
+        if (req.getParts() != null) {
+            Map<Integer, WrittenQuestionBankPart> oldByOrder = new HashMap<>();
+            for (WrittenQuestionBankPart p : q.getParts()) {
+                oldByOrder.put(p.getPartOrder(), p);
+            }
+            List<WrittenQuestionBankPart> rebuilt = buildParts(q, req.getParts(), oldByOrder);
+            q.getParts().clear();
+            q.getParts().addAll(rebuilt);
+        }
+    }
 
-        // Part B
-        if (req.getPartBQuestion() != null) q.setPartBQuestion(req.getPartBQuestion());
-        if (req.getPartBModelAnswer() != null) q.setPartBModelAnswer(req.getPartBModelAnswer());
-        if (req.getPartBAiAnswer() != null) q.setPartBAiAnswer(req.getPartBAiAnswer());
-        if (req.getPartBMarkingScheme() != null) q.setPartBMarkingScheme(req.getPartBMarkingScheme());
-        if (req.getPartBMaxMark() != null) q.setPartBMaxMark(req.getPartBMaxMark());
+    private List<WrittenQuestionBankPart> buildParts(WrittenQuestionBank bank,
+                                                     List<BankPartRequest> partRequests,
+                                                     Map<Integer, WrittenQuestionBankPart> oldByOrder) {
+        List<WrittenQuestionBankPart> parts = new ArrayList<>();
+        if (partRequests == null) return parts;
 
-        // Part C
-        if (req.getPartCQuestion() != null) q.setPartCQuestion(req.getPartCQuestion());
-        if (req.getPartCModelAnswer() != null) q.setPartCModelAnswer(req.getPartCModelAnswer());
-        if (req.getPartCAiAnswer() != null) q.setPartCAiAnswer(req.getPartCAiAnswer());
-        if (req.getPartCMarkingScheme() != null) q.setPartCMarkingScheme(req.getPartCMarkingScheme());
-        if (req.getPartCMaxMark() != null) q.setPartCMaxMark(req.getPartCMaxMark());
-
-        // Part D
-        if (req.getPartDQuestion() != null) q.setPartDQuestion(req.getPartDQuestion());
-        if (req.getPartDModelAnswer() != null) q.setPartDModelAnswer(req.getPartDModelAnswer());
-        if (req.getPartDAiAnswer() != null) q.setPartDAiAnswer(req.getPartDAiAnswer());
-        if (req.getPartDMarkingScheme() != null) q.setPartDMarkingScheme(req.getPartDMarkingScheme());
-        if (req.getPartDMaxMark() != null) q.setPartDMaxMark(req.getPartDMaxMark());
+        int order = 1;
+        for (BankPartRequest pr : partRequests) {
+            String aiAnswer = pr.getAiAnswer();
+            if (aiAnswer == null && oldByOrder != null) {
+                WrittenQuestionBankPart old = oldByOrder.get(order);
+                if (old != null && java.util.Objects.equals(old.getQuestionText(), pr.getQuestionText())) {
+                    aiAnswer = old.getAiAnswer();
+                }
+            }
+            parts.add(WrittenQuestionBankPart.builder()
+                    .bankQuestion(bank)
+                    .partOrder(order++)
+                    .questionText(pr.getQuestionText())
+                    .modelAnswer(pr.getModelAnswer())
+                    .aiAnswer(aiAnswer)
+                    .markingScheme(pr.getMarkingScheme())
+                    .maxMark(pr.getMaxMark())
+                    .build());
+        }
+        return parts;
     }
 
     public BankQuestionResponse toResponse(WrittenQuestionBank q) {
+        List<BankPartResponse> parts = q.getParts().stream()
+                .map(p -> BankPartResponse.builder()
+                        .id(p.getId())
+                        .partOrder(p.getPartOrder())
+                        .questionText(p.getQuestionText())
+                        .modelAnswer(p.getModelAnswer())
+                        .aiAnswer(p.getAiAnswer())
+                        .markingScheme(p.getMarkingScheme())
+                        .maxMark(p.getMaxMark())
+                        .build())
+                .toList();
+
         return BankQuestionResponse.builder()
                 .id(q.getId())
                 .subjectId(q.getSubject().getId())
@@ -114,32 +127,13 @@ public class WrittenQuestionBankMapper {
                 .isBoardQuestion(q.isBoardQuestion())
                 .board(q.getBoard())
                 .examYear(q.getExamYear())
-                .partAQuestion(q.getPartAQuestion())
-                .partAModelAnswer(q.getPartAModelAnswer())
-                .partAAiAnswer(q.getPartAAiAnswer())
-                .partAMaxMark(q.getPartAMaxMark())
-                .partBQuestion(q.getPartBQuestion())
-                .partBModelAnswer(q.getPartBModelAnswer())
-                .partBAiAnswer(q.getPartBAiAnswer())
-                .partBMaxMark(q.getPartBMaxMark())
-                .partCQuestion(q.getPartCQuestion())
-                .partCModelAnswer(q.getPartCModelAnswer())
-                .partCAiAnswer(q.getPartCAiAnswer())
-                .partCMaxMark(q.getPartCMaxMark())
-                .partDQuestion(q.getPartDQuestion())
-                .partDModelAnswer(q.getPartDModelAnswer())
-                .partDAiAnswer(q.getPartDAiAnswer())
-                .partDMaxMark(q.getPartDMaxMark())
+                .parts(parts)
                 .totalMaxMark(q.getTotalMaxMark())
                 .build();
     }
 
-    /**
-     * Bank question কে exam এ attach করার সময় নতুন WrittenQuestion বানায় (copy),
-     * bank এর row অপরিবর্তিত থাকে যাতে বারবার reuse করা যায়।
-     */
     public WrittenQuestion toWrittenQuestion(WrittenQuestionBank bank, String examId, int questionOrder) {
-        return WrittenQuestion.builder()
+        WrittenQuestion question = WrittenQuestion.builder()
                 .examId(examId)
                 .subject(bank.getSubject())
                 .chapter(bank.getChapter())
@@ -150,27 +144,22 @@ public class WrittenQuestionBankMapper {
                 .isBoardQuestion(bank.isBoardQuestion())
                 .board(bank.getBoard())
                 .examYear(bank.getExamYear())
-                .partAQuestion(bank.getPartAQuestion())
-                .partAModelAnswer(bank.getPartAModelAnswer())
-                .partAAiAnswer(bank.getPartAAiAnswer())
-                .partAMarkingScheme(bank.getPartAMarkingScheme())
-                .partAMaxMark(bank.getPartAMaxMark())
-                .partBQuestion(bank.getPartBQuestion())
-                .partBModelAnswer(bank.getPartBModelAnswer())
-                .partBAiAnswer(bank.getPartBAiAnswer())
-                .partBMarkingScheme(bank.getPartBMarkingScheme())
-                .partBMaxMark(bank.getPartBMaxMark())
-                .partCQuestion(bank.getPartCQuestion())
-                .partCModelAnswer(bank.getPartCModelAnswer())
-                .partCAiAnswer(bank.getPartCAiAnswer())
-                .partCMarkingScheme(bank.getPartCMarkingScheme())
-                .partCMaxMark(bank.getPartCMaxMark())
-                .partDQuestion(bank.getPartDQuestion())
-                .partDModelAnswer(bank.getPartDModelAnswer())
-                .partDAiAnswer(bank.getPartDAiAnswer())
-                .partDMarkingScheme(bank.getPartDMarkingScheme())
-                .partDMaxMark(bank.getPartDMaxMark())
                 .build();
+
+        List<WrittenQuestionPart> copied = new ArrayList<>();
+        for (WrittenQuestionBankPart bp : bank.getParts()) {
+            copied.add(WrittenQuestionPart.builder()
+                    .question(question)
+                    .partOrder(bp.getPartOrder())
+                    .questionText(bp.getQuestionText())
+                    .modelAnswer(bp.getModelAnswer())
+                    .aiAnswer(bp.getAiAnswer())
+                    .markingScheme(bp.getMarkingScheme())
+                    .maxMark(bp.getMaxMark())
+                    .build());
+        }
+        question.setParts(copied);
+        return question;
     }
 
     private Subject findSubject(String id) {

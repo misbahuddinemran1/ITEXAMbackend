@@ -3,7 +3,7 @@ package com.examplatform.modules.written.questionbank.request;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,27 +22,5 @@ public class UpdateBankQuestionRequest {
 
     private boolean regenerateAiAnswer;
 
-    private String partAQuestion;
-    private String partAModelAnswer;
-    private String partAAiAnswer;
-    private String partAMarkingScheme;
-    private BigDecimal partAMaxMark;
-
-    private String partBQuestion;
-    private String partBModelAnswer;
-    private String partBAiAnswer;
-    private String partBMarkingScheme;
-    private BigDecimal partBMaxMark;
-
-    private String partCQuestion;
-    private String partCModelAnswer;
-    private String partCAiAnswer;
-    private String partCMarkingScheme;
-    private BigDecimal partCMaxMark;
-
-    private String partDQuestion;
-    private String partDModelAnswer;
-    private String partDAiAnswer;
-    private String partDMarkingScheme;
-    private BigDecimal partDMaxMark;
+    private List<BankPartRequest> parts;
 }

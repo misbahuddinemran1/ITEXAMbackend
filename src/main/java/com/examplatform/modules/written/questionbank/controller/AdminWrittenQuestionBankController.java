@@ -65,18 +65,18 @@ public class AdminWrittenQuestionBankController {
     /**
      * নির্দিষ্ট Part এর জন্য AI answer generate করে (preview only, সেভ হয় না)
      */
-    @PostMapping("/{id}/generate-ai-answer/{part}")
-    public Map<String, String> generateAiAnswer(@PathVariable String id, @PathVariable String part) {
-        String answer = bankService.generatePartAnswer(id, part);
+    @PostMapping("/{id}/generate-ai-answer/{partOrder}")
+    public Map<String, String> generateAiAnswer(@PathVariable String id, @PathVariable Integer partOrder) {
+        String answer = bankService.generatePartAnswer(id, partOrder);
         return Map.of("aiAnswer", answer);
     }
 
     /**
      * Preview দেখে পছন্দ হলে নির্দিষ্ট Part এর AI answer সেভ করে
      */
-    @PutMapping("/{id}/ai-answer/{part}")
-    public BankQuestionResponse saveAiAnswer(@PathVariable String id, @PathVariable String part,
+    @PutMapping("/{id}/ai-answer/{partOrder}")
+    public BankQuestionResponse saveAiAnswer(@PathVariable String id, @PathVariable Integer partOrder,
                                               @RequestBody Map<String, String> body) {
-        return bankService.saveAiAnswer(id, part, body.get("aiAnswer"));
+        return bankService.saveAiAnswer(id, partOrder, body.get("aiAnswer"));
     }
 }
