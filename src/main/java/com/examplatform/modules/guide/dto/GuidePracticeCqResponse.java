@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @Builder
 public class GuidePracticeCqResponse {
@@ -18,25 +20,7 @@ public class GuidePracticeCqResponse {
     private String board;
     private Integer examYear;
 
-    private String partAQuestion;
-    private String partAModelAnswer;
-    private String partAMarkingScheme;
-    private Integer partAMaxMark;
-
-    private String partBQuestion;
-    private String partBModelAnswer;
-    private String partBMarkingScheme;
-    private Integer partBMaxMark;
-
-    private String partCQuestion;
-    private String partCModelAnswer;
-    private String partCMarkingScheme;
-    private Integer partCMaxMark;
-
-    private String partDQuestion;
-    private String partDModelAnswer;
-    private String partDMarkingScheme;
-    private Integer partDMaxMark;
+    private List<GuidePracticeCqPartResponse> parts;
 
     private Integer totalMaxMark;
     private int sortOrder;

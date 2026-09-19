@@ -6,6 +6,7 @@ import com.examplatform.modules.guide.dto.GuidePracticeMcqOptionResponse;
 import com.examplatform.modules.guide.dto.GuidePracticeMcqResponse;
 import com.examplatform.modules.guide.entity.GuideContent;
 import com.examplatform.modules.guide.entity.GuidePracticeCq;
+import com.examplatform.modules.guide.mapper.GuidePracticeCqMapper;
 import com.examplatform.modules.guide.entity.GuidePracticeMcq;
 import com.examplatform.modules.guide.entity.GuidePracticeMcqOption;
 import com.examplatform.modules.guide.repository.GuideContentRepository;
@@ -28,6 +29,7 @@ public class GuideContentStudentService {
     private final GuidePracticeMcqRepository guidePracticeMcqRepository;
     private final GuidePracticeMcqOptionRepository guidePracticeMcqOptionRepository;
     private final GuidePracticeCqRepository guidePracticeCqRepository;
+    private final GuidePracticeCqMapper cqMapper;
 
     /**
      * Fetch published guide content for a topic. Read screen entry point.
@@ -70,7 +72,7 @@ public class GuideContentStudentService {
     @Transactional
     public List<GuidePracticeCqResponse> getCqForTopic(String topicId) {
         List<GuidePracticeCq> list = guidePracticeCqRepository.findByTopicIdOrderBySortOrderAsc(topicId);
-        return list.stream().map(this::toCqResponse).toList();
+        return list.stream().map(cqMapper::toResponse).toList();
     }
 
     /**
@@ -80,7 +82,7 @@ public class GuideContentStudentService {
     public List<GuidePracticeCqResponse> getBoardQuestionsForTopic(String topicId) {
         List<GuidePracticeCq> list = guidePracticeCqRepository
                 .findByTopicIdAndIsBoardQuestionTrueOrderBySortOrderAsc(topicId);
-        return list.stream().map(this::toCqResponse).toList();
+        return list.stream().map(cqMapper::toResponse).toList();
     }
 
     // ---- mappers: entity -> DTO (never expose entities/Topic/Chapter/Subject directly) ----
@@ -106,36 +108,6 @@ public class GuideContentStudentService {
                         .explanation(o.getExplanation())
                         .orderIndex(o.getOrderIndex())
                         .build()).toList())
-                .build();
-    }
-
-    private GuidePracticeCqResponse toCqResponse(GuidePracticeCq cq) {
-        return GuidePracticeCqResponse.builder()
-                .id(cq.getId())
-                .topicId(cq.getTopic().getId())
-                .stimulus(cq.getStimulus())
-                .stimulusBn(cq.getStimulusBn())
-                .isBoardQuestion(cq.isBoardQuestion())
-                .board(cq.getBoard())
-                .examYear(cq.getExamYear())
-                .partAQuestion(cq.getPartAQuestion())
-                .partAModelAnswer(cq.getPartAModelAnswer())
-                .partAMarkingScheme(cq.getPartAMarkingScheme())
-                .partAMaxMark(cq.getPartAMaxMark())
-                .partBQuestion(cq.getPartBQuestion())
-                .partBModelAnswer(cq.getPartBModelAnswer())
-                .partBMarkingScheme(cq.getPartBMarkingScheme())
-                .partBMaxMark(cq.getPartBMaxMark())
-                .partCQuestion(cq.getPartCQuestion())
-                .partCModelAnswer(cq.getPartCModelAnswer())
-                .partCMarkingScheme(cq.getPartCMarkingScheme())
-                .partCMaxMark(cq.getPartCMaxMark())
-                .partDQuestion(cq.getPartDQuestion())
-                .partDModelAnswer(cq.getPartDModelAnswer())
-                .partDMarkingScheme(cq.getPartDMarkingScheme())
-                .partDMaxMark(cq.getPartDMaxMark())
-                .totalMaxMark(cq.getTotalMaxMark())
-                .sortOrder(cq.getSortOrder())
                 .build();
     }
 }

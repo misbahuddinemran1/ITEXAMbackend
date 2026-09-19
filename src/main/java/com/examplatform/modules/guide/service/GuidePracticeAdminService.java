@@ -3,6 +3,7 @@ package com.examplatform.modules.guide.service;
 import com.examplatform.common.exception.ResourceNotFoundException;
 import com.examplatform.modules.guide.dto.*;
 import com.examplatform.modules.guide.entity.GuidePracticeCq;
+import com.examplatform.modules.guide.mapper.GuidePracticeCqMapper;
 import com.examplatform.modules.guide.entity.GuidePracticeMcq;
 import com.examplatform.modules.guide.entity.GuidePracticeMcqOption;
 import com.examplatform.modules.guide.repository.GuidePracticeCqRepository;
@@ -27,6 +28,7 @@ public class GuidePracticeAdminService {
     private final GuidePracticeMcqOptionRepository mcqOptionRepository;
     private final GuidePracticeCqRepository cqRepository;
     private final TopicRepository topicRepository;
+    private final GuidePracticeCqMapper cqMapper;
 
     // ================= MCQ =================
 
@@ -137,10 +139,10 @@ public class GuidePracticeAdminService {
         Topic topic = topicRepository.findById(req.getTopicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + req.getTopicId()));
 
-        GuidePracticeCq cq = mapCq(new GuidePracticeCq(), req);
+        GuidePracticeCq cq = cqMapper.applyRequest(new GuidePracticeCq(), req);
         cq.setTopic(topic);
         cq = cqRepository.save(cq);
-        return toCqResponse(cq);
+        return cqMapper.toResponse(cq);
     }
 
     @Transactional
@@ -153,9 +155,9 @@ public class GuidePracticeAdminService {
                     .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + req.getTopicId()));
             cq.setTopic(topic);
         }
-        cq = mapCq(cq, req);
+        cq = cqMapper.applyRequest(cq, req);
         cq = cqRepository.save(cq);
-        return toCqResponse(cq);
+        return cqMapper.toResponse(cq);
     }
 
     @Transactional
@@ -171,68 +173,6 @@ public class GuidePracticeAdminService {
         List<GuidePracticeCq> list = (topicId != null && !topicId.isBlank())
                 ? cqRepository.findByTopicIdOrderBySortOrderAsc(topicId)
                 : cqRepository.findAllByOrderBySortOrderAsc();
-        return list.stream().map(this::toCqResponse).toList();
-    }
-
-    private GuidePracticeCq mapCq(GuidePracticeCq cq, GuidePracticeCqAdminRequest req) {
-        cq.setStimulus(req.getStimulus());
-        cq.setStimulusBn(req.getStimulusBn());
-        cq.setBoardQuestion(req.isBoardQuestion());
-        cq.setBoard(req.getBoard());
-        cq.setExamYear(req.getExamYear());
-
-        cq.setPartAQuestion(req.getPartAQuestion());
-        cq.setPartAModelAnswer(req.getPartAModelAnswer());
-        cq.setPartAMarkingScheme(req.getPartAMarkingScheme());
-        cq.setPartAMaxMark(req.getPartAMaxMark());
-
-        cq.setPartBQuestion(req.getPartBQuestion());
-        cq.setPartBModelAnswer(req.getPartBModelAnswer());
-        cq.setPartBMarkingScheme(req.getPartBMarkingScheme());
-        cq.setPartBMaxMark(req.getPartBMaxMark());
-
-        cq.setPartCQuestion(req.getPartCQuestion());
-        cq.setPartCModelAnswer(req.getPartCModelAnswer());
-        cq.setPartCMarkingScheme(req.getPartCMarkingScheme());
-        cq.setPartCMaxMark(req.getPartCMaxMark());
-
-        cq.setPartDQuestion(req.getPartDQuestion());
-        cq.setPartDModelAnswer(req.getPartDModelAnswer());
-        cq.setPartDMarkingScheme(req.getPartDMarkingScheme());
-        cq.setPartDMaxMark(req.getPartDMaxMark());
-
-        cq.setTotalMaxMark(req.getTotalMaxMark());
-        cq.setSortOrder(req.getSortOrder());
-        return cq;
-    }
-
-    private GuidePracticeCqResponse toCqResponse(GuidePracticeCq cq) {
-        return GuidePracticeCqResponse.builder()
-                .id(cq.getId())
-                .topicId(cq.getTopic().getId())
-                .stimulus(cq.getStimulus())
-                .stimulusBn(cq.getStimulusBn())
-                .isBoardQuestion(cq.isBoardQuestion())
-                .board(cq.getBoard())
-                .examYear(cq.getExamYear())
-                .partAQuestion(cq.getPartAQuestion())
-                .partAModelAnswer(cq.getPartAModelAnswer())
-                .partAMarkingScheme(cq.getPartAMarkingScheme())
-                .partAMaxMark(cq.getPartAMaxMark())
-                .partBQuestion(cq.getPartBQuestion())
-                .partBModelAnswer(cq.getPartBModelAnswer())
-                .partBMarkingScheme(cq.getPartBMarkingScheme())
-                .partBMaxMark(cq.getPartBMaxMark())
-                .partCQuestion(cq.getPartCQuestion())
-                .partCModelAnswer(cq.getPartCModelAnswer())
-                .partCMarkingScheme(cq.getPartCMarkingScheme())
-                .partCMaxMark(cq.getPartCMaxMark())
-                .partDQuestion(cq.getPartDQuestion())
-                .partDModelAnswer(cq.getPartDModelAnswer())
-                .partDMarkingScheme(cq.getPartDMarkingScheme())
-                .partDMaxMark(cq.getPartDMaxMark())
-                .totalMaxMark(cq.getTotalMaxMark())
-                .sortOrder(cq.getSortOrder())
-                .build();
+        return list.stream().map(cqMapper::toResponse).toList();
     }
 }

@@ -5,6 +5,9 @@ import com.examplatform.modules.taxonomy.entity.Topic;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "guide_practice_cq")
 @Getter
@@ -33,41 +36,10 @@ public class GuidePracticeCq extends BaseEntity {
     @Column(name = "exam_year")
     private Integer examYear;
 
-    @Column(name = "part_a_question", columnDefinition = "TEXT")
-    private String partAQuestion;
-    @Column(name = "part_a_model_answer", columnDefinition = "TEXT")
-    private String partAModelAnswer;
-    @Column(name = "part_a_marking_scheme", columnDefinition = "TEXT")
-    private String partAMarkingScheme;
-    @Column(name = "part_a_max_mark")
-    private Integer partAMaxMark;
-
-    @Column(name = "part_b_question", columnDefinition = "TEXT")
-    private String partBQuestion;
-    @Column(name = "part_b_model_answer", columnDefinition = "TEXT")
-    private String partBModelAnswer;
-    @Column(name = "part_b_marking_scheme", columnDefinition = "TEXT")
-    private String partBMarkingScheme;
-    @Column(name = "part_b_max_mark")
-    private Integer partBMaxMark;
-
-    @Column(name = "part_c_question", columnDefinition = "TEXT")
-    private String partCQuestion;
-    @Column(name = "part_c_model_answer", columnDefinition = "TEXT")
-    private String partCModelAnswer;
-    @Column(name = "part_c_marking_scheme", columnDefinition = "TEXT")
-    private String partCMarkingScheme;
-    @Column(name = "part_c_max_mark")
-    private Integer partCMaxMark;
-
-    @Column(name = "part_d_question", columnDefinition = "TEXT")
-    private String partDQuestion;
-    @Column(name = "part_d_model_answer", columnDefinition = "TEXT")
-    private String partDModelAnswer;
-    @Column(name = "part_d_marking_scheme", columnDefinition = "TEXT")
-    private String partDMarkingScheme;
-    @Column(name = "part_d_max_mark")
-    private Integer partDMaxMark;
+    @OneToMany(mappedBy = "cq", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("partOrder ASC")
+    @Builder.Default
+    private List<GuidePracticeCqPart> parts = new ArrayList<>();
 
     @Column(name = "total_max_mark")
     private Integer totalMaxMark;
