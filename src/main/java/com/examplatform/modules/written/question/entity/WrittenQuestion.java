@@ -134,6 +134,77 @@ public class WrittenQuestion {
         updatedAt = LocalDateTime.now();
     }
 
+    // ---- Flexible-part lookups by 1-based partOrder, with legacy A/B/C/D fallback ----
+    // ব্যবহার হয় Evaluation/Transcription মডিউলে, যাতে ওগুলো fixed A/B/C/D-এর বদলে
+    // যেকোনো সংখ্যক flexible part নিয়ে কাজ করতে পারে।
+
+    @Transient
+    public int getPartCount() {
+        if (parts != null && !parts.isEmpty()) return parts.size();
+        return 4; // legacy fixed-4 প্রশ্ন
+    }
+
+    @Transient
+    public String getPartQuestionText(int partOrder) {
+        if (parts != null && !parts.isEmpty()) {
+            return parts.stream().filter(p -> p.getPartOrder() == partOrder)
+                    .map(WrittenQuestionPart::getQuestionText).findFirst().orElse(null);
+        }
+        return switch (partOrder) {
+            case 1 -> partAQuestion;
+            case 2 -> partBQuestion;
+            case 3 -> partCQuestion;
+            case 4 -> partDQuestion;
+            default -> null;
+        };
+    }
+
+    @Transient
+    public String getPartModelAnswer(int partOrder) {
+        if (parts != null && !parts.isEmpty()) {
+            return parts.stream().filter(p -> p.getPartOrder() == partOrder)
+                    .map(WrittenQuestionPart::getModelAnswer).findFirst().orElse(null);
+        }
+        return switch (partOrder) {
+            case 1 -> partAModelAnswer;
+            case 2 -> partBModelAnswer;
+            case 3 -> partCModelAnswer;
+            case 4 -> partDModelAnswer;
+            default -> null;
+        };
+    }
+
+    @Transient
+    public String getPartAiAnswer(int partOrder) {
+        if (parts != null && !parts.isEmpty()) {
+            return parts.stream().filter(p -> p.getPartOrder() == partOrder)
+                    .map(WrittenQuestionPart::getAiAnswer).findFirst().orElse(null);
+        }
+        return switch (partOrder) {
+            case 1 -> partAAiAnswer;
+            case 2 -> partBAiAnswer;
+            case 3 -> partCAiAnswer;
+            case 4 -> partDAiAnswer;
+            default -> null;
+        };
+    }
+
+    @Transient
+    public BigDecimal getPartMaxMark(int partOrder) {
+        if (parts != null && !parts.isEmpty()) {
+            return parts.stream().filter(p -> p.getPartOrder() == partOrder)
+                    .map(WrittenQuestionPart::getMaxMark).findFirst().orElse(BigDecimal.ZERO);
+        }
+        BigDecimal v = switch (partOrder) {
+            case 1 -> partAMaxMark;
+            case 2 -> partBMaxMark;
+            case 3 -> partCMaxMark;
+            case 4 -> partDMaxMark;
+            default -> null;
+        };
+        return v != null ? v : BigDecimal.ZERO;
+    }
+
     @Transient
     public BigDecimal getTotalMaxMark() {
         if (parts != null && !parts.isEmpty()) {

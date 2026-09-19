@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -36,11 +37,7 @@ public class ExamResponse {
 
     private String aiProvider;
 
-    // Only meaningful when evaluationMode = HYBRID
-    private String partAMode;
-    private String partBMode;
-    private String partCMode;
-    private String partDMode;
+    private List<Integer> aiPartOrders;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

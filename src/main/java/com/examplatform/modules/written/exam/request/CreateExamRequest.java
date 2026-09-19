@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,9 +23,9 @@ public class CreateExamRequest {
     @NotBlank(message = "Education level is required")
     private String educationLevel;
 
-    private String subjectId;   // optional at exam level
-    private String chapterId;   // optional
-    private String topicId;     // optional
+    private String subjectId;
+    private String chapterId;
+    private String topicId;
 
     @NotNull
     @Min(1)
@@ -37,17 +38,13 @@ public class CreateExamRequest {
     private LocalDateTime endTime;
 
     @NotBlank(message = "Evaluation mode is required")
-    private String evaluationMode; // MANUAL / AI / HYBRID
+    private String evaluationMode;
 
-    private String aiProvider;     // GEMINI / CLAUDE / OPENAI — required when evaluationMode = AI or HYBRID
+    private String aiProvider;
 
-    // Only relevant when evaluationMode = HYBRID; each value AI / MANUAL
-    private String partAMode;
-    private String partBMode;
-    private String partCMode;
-    private String partDMode;
+    // শুধু evaluationMode = HYBRID হলে প্রাসঙ্গিক — কোন কোন sub-question-index AI দিয়ে মূল্যায়ন হবে
+    private List<Integer> aiPartOrders;
 
-    // Practice control settings (admin configurable per exam)
     private Boolean practiceEnabled = true;
     private Boolean showResultInPractice = true;
 }

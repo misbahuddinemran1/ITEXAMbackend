@@ -10,8 +10,8 @@ public interface WrittenSubmissionTranscriptRepository extends JpaRepository<Wri
 
     List<WrittenSubmissionTranscript> findBySubmissionId(String submissionId);
 
-    Optional<WrittenSubmissionTranscript> findBySubmissionIdAndQuestionIdAndPart(
-            String submissionId, String questionId, com.examplatform.modules.written.question.enums.QuestionPart part);
+    Optional<WrittenSubmissionTranscript> findBySubmissionIdAndQuestionIdAndPartOrder(
+            String submissionId, String questionId, Integer partOrder);
 
     boolean existsBySubmissionId(String submissionId);
 }

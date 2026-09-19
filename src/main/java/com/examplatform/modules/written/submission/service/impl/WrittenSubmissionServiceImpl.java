@@ -5,7 +5,6 @@ import com.examplatform.modules.written.exam.entity.WrittenExam;
 import com.examplatform.modules.written.exam.enums.ExamStatus;
 import com.examplatform.modules.written.exam.repository.WrittenExamRepository;
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
-import com.examplatform.modules.written.question.enums.QuestionPart;
 import com.examplatform.modules.written.question.repository.WrittenQuestionRepository;
 import com.examplatform.modules.written.submission.entity.WrittenSubmission;
 import com.examplatform.modules.written.submission.entity.WrittenSubmissionFile;
@@ -171,14 +170,14 @@ public class WrittenSubmissionServiceImpl implements WrittenSubmissionService {
                         + " does not belong to this submission's exam");
             }
 
-            QuestionPart part = QuestionPart.valueOf(entry.getPart());
+            int partOrder = entry.getPartOrder();
 
             WrittenSubmissionTranscript transcript = transcriptRepository
-                    .findBySubmissionIdAndQuestionIdAndPart(submissionId, question.getId(), part)
+                    .findBySubmissionIdAndQuestionIdAndPartOrder(submissionId, question.getId(), partOrder)
                     .orElse(WrittenSubmissionTranscript.builder()
                             .submissionId(submissionId)
                             .question(question)
-                            .part(part)
+                            .partOrder(partOrder)
                             .build());
 
             transcript.setTranscribedText(entry.getAnswerText());

@@ -12,7 +12,6 @@ import com.examplatform.modules.written.evaluation.repository.WrittenEvaluationR
 import com.examplatform.modules.written.evaluation.response.EvaluationResponse;
 import com.examplatform.modules.written.exam.enums.EvaluationMode;
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
-import com.examplatform.modules.written.question.enums.QuestionPart;
 import com.examplatform.modules.written.question.repository.WrittenQuestionRepository;
 import com.examplatform.modules.written.submission.entity.WrittenSubmission;
 import com.examplatform.modules.written.submission.enums.SubmissionStatus;
@@ -58,11 +57,6 @@ public class WrittenManualEvaluationServiceImpl implements WrittenManualEvaluati
         WrittenEvaluation savedEvaluation = evaluationRepository.save(evaluation);
 
         if (!isNewEvaluation) {
-            // Re-evaluation — wipe previous detail rows before inserting fresh ones.
-            // flush() is required here: Hibernate's default flush order runs INSERTs
-            // before DELETEs, so without an explicit flush the new rows (same
-            // evaluation_id+question_id+part) would hit uk_written_eval_detail_part
-            // while the old rows are still present, causing a unique constraint violation.
             detailRepository.deleteByEvaluationId(savedEvaluation.getId());
             detailRepository.flush();
         }
@@ -73,12 +67,12 @@ public class WrittenManualEvaluationServiceImpl implements WrittenManualEvaluati
             WrittenQuestion question = questionRepository.findById(partMark.getQuestionId())
                     .orElseThrow(() -> new NoSuchElementException("Question not found: " + partMark.getQuestionId()));
 
-            QuestionPart part = QuestionPart.valueOf(partMark.getPart());
-            BigDecimal maxMark = resolveMaxMark(question, part);
+            int partOrder = partMark.getPartOrder();
+            BigDecimal maxMark = question.getPartMaxMark(partOrder);
 
             if (partMark.getObtainedMark().compareTo(maxMark) > 0) {
                 throw new IllegalArgumentException("obtainedMark exceeds maxMark for question "
-                        + question.getId() + " part " + part);
+                        + question.getId() + " sub-question " + partOrder);
             }
             if (partMark.getObtainedMark().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("obtainedMark cannot be negative");
@@ -87,7 +81,7 @@ public class WrittenManualEvaluationServiceImpl implements WrittenManualEvaluati
             WrittenEvaluationDetail detail = WrittenEvaluationDetail.builder()
                     .evaluation(savedEvaluation)
                     .question(question)
-                    .part(part)
+                    .partOrder(partOrder)
                     .obtainedMark(partMark.getObtainedMark())
                     .maxMark(maxMark)
                     .feedback(partMark.getFeedback())
@@ -108,14 +102,5 @@ public class WrittenManualEvaluationServiceImpl implements WrittenManualEvaluati
         submissionRepository.save(submission);
 
         return evaluationMapper.toResponse(savedEvaluation, detailRepository.findByEvaluationId(savedEvaluation.getId()));
-    }
-
-    private BigDecimal resolveMaxMark(WrittenQuestion question, QuestionPart part) {
-        return switch (part) {
-            case A -> question.getPartAMaxMark();
-            case B -> question.getPartBMaxMark();
-            case C -> question.getPartCMaxMark();
-            case D -> question.getPartDMaxMark();
-        };
     }
 }

@@ -1,7 +1,6 @@
 package com.examplatform.modules.written.submission.entity;
 
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
-import com.examplatform.modules.written.question.enums.QuestionPart;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,9 +26,9 @@ public class WrittenSubmissionTranscript {
     @JoinColumn(name = "question_id", nullable = false)
     private WrittenQuestion question;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "part", nullable = false, length = 1)
-    private QuestionPart part;
+    // 1-based sub-question index (BCS Written স্টাইল flexible parts) — আগে fixed A/B/C/D enum ছিল
+    @Column(name = "part_order", nullable = false)
+    private Integer partOrder;
 
     @Column(name = "transcribed_text", columnDefinition = "TEXT")
     private String transcribedText;

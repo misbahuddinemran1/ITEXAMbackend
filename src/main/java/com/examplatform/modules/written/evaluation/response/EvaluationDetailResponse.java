@@ -16,7 +16,7 @@ public class EvaluationDetailResponse {
     private String id;
     private String questionId;
     private Integer questionOrder;
-    private String part;
+    private Integer partOrder;
     private BigDecimal obtainedMark;
     private BigDecimal maxMark;
 

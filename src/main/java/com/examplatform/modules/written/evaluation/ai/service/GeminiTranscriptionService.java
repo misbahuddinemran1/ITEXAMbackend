@@ -3,7 +3,6 @@ package com.examplatform.modules.written.evaluation.ai.service;
 import com.examplatform.modules.written.evaluation.ai.parser.TranscriptionResponseParser;
 import com.examplatform.modules.written.evaluation.ai.prompt.TranscriptionPromptBuilder;
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
-import com.examplatform.modules.written.question.enums.QuestionPart;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,7 @@ public class GeminiTranscriptionService {
 
     public List<TranscriptionResponseParser.TranscriptEntry> transcribe(
             List<WrittenQuestion> questions,
-            Map<String, List<QuestionPart>> partsToTranscribeByQuestionId,
+            Map<String, List<Integer>> partsToTranscribeByQuestionId,
             List<String> base64Images,
             String mimeType) {
 

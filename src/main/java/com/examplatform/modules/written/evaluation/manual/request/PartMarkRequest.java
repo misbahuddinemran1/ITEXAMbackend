@@ -14,8 +14,8 @@ public class PartMarkRequest {
     @NotBlank(message = "questionId is required")
     private String questionId;
 
-    @NotBlank(message = "part is required")
-    private String part; // A / B / C / D
+    @NotNull(message = "partOrder is required")
+    private Integer partOrder; // 1, 2, 3... (BCS Written স্টাইল flexible sub-question index)
 
     @NotNull(message = "obtainedMark is required")
     private BigDecimal obtainedMark;

@@ -89,7 +89,7 @@ public class WrittenEvaluationController {
                 transcriptRepository.findBySubmissionId(submissionId);
         Map<String, String> answerMap = new java.util.HashMap<>();
         for (var t : transcripts) {
-            answerMap.put(t.getQuestion().getId() + "::" + t.getPart().name(), t.getTranscribedText());
+            answerMap.put(t.getQuestion().getId() + "::" + t.getPartOrder(), t.getTranscribedText());
         }
 
         List<Map<String, Object>> result = new java.util.ArrayList<>();
@@ -98,28 +98,18 @@ public class WrittenEvaluationController {
                     questionRepository.findById(d.getQuestionId()).orElse(null);
             if (question == null) continue;
 
-            String part = d.getPart();
-            String questionText = switch (part) {
-                case "A" -> question.getPartAQuestion();
-                case "B" -> question.getPartBQuestion();
-                case "C" -> question.getPartCQuestion();
-                case "D" -> question.getPartDQuestion();
-                default -> null;
-            };
-            String modelAnswer = switch (part) {
-                case "A" -> question.getPartAModelAnswer() != null ? question.getPartAModelAnswer() : question.getPartAAiAnswer();
-                case "B" -> question.getPartBModelAnswer() != null ? question.getPartBModelAnswer() : question.getPartBAiAnswer();
-                case "C" -> question.getPartCModelAnswer() != null ? question.getPartCModelAnswer() : question.getPartCAiAnswer();
-                case "D" -> question.getPartDModelAnswer() != null ? question.getPartDModelAnswer() : question.getPartDAiAnswer();
-                default -> null;
-            };
+            int partOrder = d.getPartOrder();
+            String questionText = question.getPartQuestionText(partOrder);
+            String modelAnswer = question.getPartModelAnswer(partOrder) != null
+                    ? question.getPartModelAnswer(partOrder)
+                    : question.getPartAiAnswer(partOrder);
 
             Map<String, Object> item = new java.util.HashMap<>();
             item.put("questionId", d.getQuestionId());
             item.put("questionOrder", d.getQuestionOrder());
-            item.put("part", part);
+            item.put("partOrder", partOrder);
             item.put("questionText", questionText);
-            item.put("studentAnswer", answerMap.get(d.getQuestionId() + "::" + part));
+            item.put("studentAnswer", answerMap.get(d.getQuestionId() + "::" + partOrder));
             item.put("modelAnswer", modelAnswer);
             item.put("obtainedMark", d.getObtainedMark());
             item.put("maxMark", d.getMaxMark());

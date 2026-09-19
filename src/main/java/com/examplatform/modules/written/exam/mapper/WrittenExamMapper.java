@@ -10,7 +10,6 @@ import com.examplatform.modules.written.exam.entity.WrittenExam;
 import com.examplatform.modules.written.exam.enums.AiProvider;
 import com.examplatform.modules.written.exam.enums.EvaluationMode;
 import com.examplatform.modules.written.exam.enums.ExamStatus;
-import com.examplatform.modules.written.exam.enums.PartEvaluationMode;
 import com.examplatform.modules.written.exam.request.CreateExamRequest;
 import com.examplatform.modules.written.exam.request.UpdateExamRequest;
 import com.examplatform.modules.written.exam.response.ExamResponse;
@@ -18,7 +17,10 @@ import com.examplatform.modules.written.exam.response.ExamSummaryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -44,11 +46,9 @@ public class WrittenExamMapper {
                 .status(ExamStatus.DRAFT)
                 .cycleNumber(1)
                 .totalMarks(0)
+                .aiPartOrders(resolveAiPartOrders(evaluationMode, req.getAiPartOrders()))
                 .practiceEnabled(req.getPracticeEnabled() != null ? req.getPracticeEnabled() : true)
                 .showResultInPractice(req.getShowResultInPractice() != null ? req.getShowResultInPractice() : true);
-
-        applyPartModes(builder, evaluationMode, req.getPartAMode(), req.getPartBMode(),
-                req.getPartCMode(), req.getPartDMode());
 
         if (req.getSubjectId() != null) {
             builder.subject(findSubject(req.getSubjectId()));
@@ -86,23 +86,15 @@ public class WrittenExamMapper {
             }
             exam.setAiProvider(provider);
         } else if (req.getEvaluationMode() != null) {
-            // switched to MANUAL — clear provider
             exam.setAiProvider(null);
         }
 
         if (evaluationMode == EvaluationMode.HYBRID) {
-            if (req.getPartAMode() != null) exam.setPartAMode(PartEvaluationMode.valueOf(req.getPartAMode()));
-            if (req.getPartBMode() != null) exam.setPartBMode(PartEvaluationMode.valueOf(req.getPartBMode()));
-            if (req.getPartCMode() != null) exam.setPartCMode(PartEvaluationMode.valueOf(req.getPartCMode()));
-            if (req.getPartDMode() != null) exam.setPartDMode(PartEvaluationMode.valueOf(req.getPartDMode()));
+            if (req.getAiPartOrders() != null) {
+                exam.setAiPartOrders(new HashSet<>(req.getAiPartOrders()));
+            }
         } else if (req.getEvaluationMode() != null) {
-            // MANUAL or AI applies uniformly to all parts
-            PartEvaluationMode uniform = evaluationMode == EvaluationMode.AI
-                    ? PartEvaluationMode.AI : PartEvaluationMode.MANUAL;
-            exam.setPartAMode(uniform);
-            exam.setPartBMode(uniform);
-            exam.setPartCMode(uniform);
-            exam.setPartDMode(uniform);
+            exam.setAiPartOrders(new HashSet<>());
         }
 
         if (req.getPracticeEnabled() != null) exam.setPracticeEnabled(req.getPracticeEnabled());
@@ -134,10 +126,7 @@ public class WrittenExamMapper {
                 .status(exam.getStatus().name())
                 .evaluationMode(exam.getEvaluationMode().name())
                 .aiProvider(exam.getAiProvider() != null ? exam.getAiProvider().name() : null)
-                .partAMode(exam.getPartAMode() != null ? exam.getPartAMode().name() : null)
-                .partBMode(exam.getPartBMode() != null ? exam.getPartBMode().name() : null)
-                .partCMode(exam.getPartCMode() != null ? exam.getPartCMode().name() : null)
-                .partDMode(exam.getPartDMode() != null ? exam.getPartDMode().name() : null)
+                .aiPartOrders(exam.getAiPartOrders() != null ? List.copyOf(exam.getAiPartOrders()) : List.of())
                 .createdAt(exam.getCreatedAt())
                 .updatedAt(exam.getUpdatedAt())
                 .practiceEnabled(exam.getPracticeEnabled())
@@ -172,21 +161,11 @@ public class WrittenExamMapper {
         return null;
     }
 
-    private void applyPartModes(WrittenExam.WrittenExamBuilder builder, EvaluationMode evaluationMode,
-                                String partAStr, String partBStr, String partCStr, String partDStr) {
-        if (evaluationMode == EvaluationMode.HYBRID) {
-            builder.partAMode(partAStr != null ? PartEvaluationMode.valueOf(partAStr) : PartEvaluationMode.MANUAL);
-            builder.partBMode(partBStr != null ? PartEvaluationMode.valueOf(partBStr) : PartEvaluationMode.MANUAL);
-            builder.partCMode(partCStr != null ? PartEvaluationMode.valueOf(partCStr) : PartEvaluationMode.MANUAL);
-            builder.partDMode(partDStr != null ? PartEvaluationMode.valueOf(partDStr) : PartEvaluationMode.MANUAL);
-        } else {
-            PartEvaluationMode uniform = evaluationMode == EvaluationMode.AI
-                    ? PartEvaluationMode.AI : PartEvaluationMode.MANUAL;
-            builder.partAMode(uniform);
-            builder.partBMode(uniform);
-            builder.partCMode(uniform);
-            builder.partDMode(uniform);
+    private Set<Integer> resolveAiPartOrders(EvaluationMode evaluationMode, List<Integer> aiPartOrders) {
+        if (evaluationMode == EvaluationMode.HYBRID && aiPartOrders != null) {
+            return new HashSet<>(aiPartOrders);
         }
+        return new HashSet<>();
     }
 
     private Subject findSubject(String id) {

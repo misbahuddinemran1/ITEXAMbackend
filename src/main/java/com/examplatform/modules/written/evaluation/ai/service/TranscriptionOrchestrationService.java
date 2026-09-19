@@ -2,7 +2,6 @@ package com.examplatform.modules.written.evaluation.ai.service;
 
 import com.examplatform.modules.written.evaluation.ai.parser.TranscriptionResponseParser;
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
-import com.examplatform.modules.written.question.enums.QuestionPart;
 import com.examplatform.modules.written.question.repository.WrittenQuestionRepository;
 import com.examplatform.modules.written.submission.entity.WrittenSubmissionFile;
 import com.examplatform.modules.written.submission.entity.WrittenSubmissionTranscript;
@@ -28,18 +27,9 @@ public class TranscriptionOrchestrationService {
     private final AiFileReaderService fileReaderService;
     private final GeminiTranscriptionService geminiTranscriptionService;
 
-    /**
-     * Ensures every (question, part) pair that needs AI evaluation has a transcript
-     * cached for this submission. Skips already-transcribed pairs. Handles TEXT-type
-     * submissions by copying text_content directly (no AI call needed for those).
-     *
-     * @param examId               the exam this submission belongs to
-     * @param submissionId         the submission being evaluated
-     * @param partsToTranscribeByQuestionId map of questionId -> list of parts that are AI-mode
-     */
     @Transactional
     public void ensureTranscribed(String examId, String submissionId,
-                                   Map<String, List<QuestionPart>> partsToTranscribeByQuestionId) {
+                                   Map<String, List<Integer>> partsToTranscribeByQuestionId) {
 
         List<WrittenSubmissionFile> files = submissionFileRepository
                 .findBySubmissionIdOrderByPageNumberAsc(submissionId);
@@ -48,25 +38,24 @@ public class TranscriptionOrchestrationService {
             throw new IllegalStateException("No submission files found for submission: " + submissionId);
         }
 
-        // Figure out which (questionId, part) pairs are already transcribed
         List<WrittenSubmissionTranscript> existing = transcriptRepository.findBySubmissionId(submissionId);
         Map<String, WrittenSubmissionTranscript> existingByKey = new HashMap<>();
         for (WrittenSubmissionTranscript t : existing) {
-            existingByKey.put(t.getQuestion().getId() + ":" + t.getPart().name(), t);
+            existingByKey.put(t.getQuestion().getId() + ":" + t.getPartOrder(), t);
         }
 
-        Map<String, List<QuestionPart>> missing = new HashMap<>();
-        for (Map.Entry<String, List<QuestionPart>> entry : partsToTranscribeByQuestionId.entrySet()) {
-            for (QuestionPart part : entry.getValue()) {
-                String key = entry.getKey() + ":" + part.name();
+        Map<String, List<Integer>> missing = new HashMap<>();
+        for (Map.Entry<String, List<Integer>> entry : partsToTranscribeByQuestionId.entrySet()) {
+            for (Integer partOrder : entry.getValue()) {
+                String key = entry.getKey() + ":" + partOrder;
                 if (!existingByKey.containsKey(key)) {
-                    missing.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(part);
+                    missing.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(partOrder);
                 }
             }
         }
 
         if (missing.isEmpty()) {
-            return; // everything already transcribed/cached
+            return;
         }
 
         FileType submissionFileType = files.get(0).getFileType();
@@ -79,28 +68,24 @@ public class TranscriptionOrchestrationService {
     }
 
     private void transcribeFromTextContent(String submissionId, List<WrittenSubmissionFile> files,
-                                            Map<String, List<QuestionPart>> missing) {
-        // For TEXT submissions we assume a single combined text_content covering all parts.
-        // Since there's no AI-based splitting here, this expects the student's text submission
-        // to be organized in a way the matching step can still work on the whole blob per part.
-        // Simplest approach: use the same full text_content as the "transcript" for every missing part.
+                                            Map<String, List<Integer>> missing) {
         String combinedText = files.stream()
                 .map(WrittenSubmissionFile::getTextContent)
                 .filter(t -> t != null && !t.isBlank())
                 .reduce("", (a, b) -> a + "\n" + b);
 
-        for (Map.Entry<String, List<QuestionPart>> entry : missing.entrySet()) {
+        for (Map.Entry<String, List<Integer>> entry : missing.entrySet()) {
             WrittenQuestion question = questionRepository.findById(entry.getKey())
                     .orElseThrow(() -> new java.util.NoSuchElementException("Question not found: " + entry.getKey()));
 
-            for (QuestionPart part : entry.getValue()) {
-                saveTranscript(submissionId, question, part, combinedText);
+            for (Integer partOrder : entry.getValue()) {
+                saveTranscript(submissionId, question, partOrder, combinedText);
             }
         }
     }
 
     private void transcribeFromImagesOrPdf(String submissionId, List<WrittenSubmissionFile> files,
-                                            Map<String, List<QuestionPart>> missing, FileType fileType) {
+                                            Map<String, List<Integer>> missing, FileType fileType) {
 
         List<WrittenQuestion> questions = missing.keySet().stream()
                 .map(id -> questionRepository.findById(id)
@@ -123,18 +108,23 @@ public class TranscriptionOrchestrationService {
 
         for (TranscriptionResponseParser.TranscriptEntry entry : entries) {
             WrittenQuestion question = questionsById.get(entry.questionId());
-            if (question == null) continue; // AI returned an unexpected questionId, skip defensively
+            if (question == null) continue;
 
-            QuestionPart part = QuestionPart.valueOf(entry.part());
-            saveTranscript(submissionId, question, part, entry.transcribedText());
+            int partOrder;
+            try {
+                partOrder = Integer.parseInt(entry.part().trim());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            saveTranscript(submissionId, question, partOrder, entry.transcribedText());
         }
     }
 
-    private void saveTranscript(String submissionId, WrittenQuestion question, QuestionPart part, String text) {
+    private void saveTranscript(String submissionId, WrittenQuestion question, int partOrder, String text) {
         WrittenSubmissionTranscript transcript = WrittenSubmissionTranscript.builder()
                 .submissionId(submissionId)
                 .question(question)
-                .part(part)
+                .partOrder(partOrder)
                 .transcribedText(text)
                 .build();
         transcriptRepository.save(transcript);

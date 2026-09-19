@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -34,15 +35,10 @@ public class UpdateExamRequest {
 
     private String evaluationMode;
 
-    private String aiProvider;     // GEMINI / CLAUDE / OPENAI
+    private String aiProvider;
 
-    // Only relevant when evaluationMode = HYBRID; each value AI / MANUAL
-    private String partAMode;
-    private String partBMode;
-    private String partCMode;
-    private String partDMode;
+    private List<Integer> aiPartOrders;
 
-    // Practice control settings (admin configurable per exam)
     private Boolean practiceEnabled;
     private Boolean showResultInPractice;
 }

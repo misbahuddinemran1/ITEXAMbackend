@@ -34,7 +34,7 @@ public class WrittenEvaluationMapper {
                 .id(detail.getId())
                 .questionId(detail.getQuestion().getId())
                 .questionOrder(detail.getQuestion().getQuestionOrder())
-                .part(detail.getPart().name())
+                .partOrder(detail.getPartOrder())
                 .obtainedMark(detail.getObtainedMark())
                 .maxMark(detail.getMaxMark())
                 .predictedMarkManual(detail.getPredictedMarkManual())

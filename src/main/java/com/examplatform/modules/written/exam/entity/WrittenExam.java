@@ -6,7 +6,6 @@ import com.examplatform.modules.taxonomy.entity.Topic;
 import com.examplatform.modules.written.exam.enums.AiProvider;
 import com.examplatform.modules.written.exam.enums.EvaluationMode;
 import com.examplatform.modules.written.exam.enums.ExamStatus;
-import com.examplatform.modules.written.exam.enums.PartEvaluationMode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -82,25 +81,14 @@ public class WrittenExam {
     @Column(name = "ai_provider")
     private AiProvider aiProvider;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "part_a_mode", nullable = false)
+    // শুধু evaluationMode = HYBRID হলে প্রাসঙ্গিক — কোন কোন sub-question-index (1,2,3...) AI
+    // দিয়ে মূল্যায়ন হবে (বাকিগুলো Manual)। আগে fixed partAMode/B/C/D ছিল, এখন BCS Written
+    // স্টাইল flexible parts-এর সাথে মিলিয়ে সংখ্যা-ভিত্তিক লিস্ট।
+    @ElementCollection
+    @CollectionTable(name = "written_exam_ai_part_order", joinColumns = @JoinColumn(name = "exam_id"))
+    @Column(name = "part_order")
     @Builder.Default
-    private PartEvaluationMode partAMode = PartEvaluationMode.MANUAL;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "part_b_mode", nullable = false)
-    @Builder.Default
-    private PartEvaluationMode partBMode = PartEvaluationMode.MANUAL;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "part_c_mode", nullable = false)
-    @Builder.Default
-    private PartEvaluationMode partCMode = PartEvaluationMode.MANUAL;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "part_d_mode", nullable = false)
-    @Builder.Default
-    private PartEvaluationMode partDMode = PartEvaluationMode.MANUAL;
+    private java.util.Set<Integer> aiPartOrders = new java.util.HashSet<>();
 
 
     @Column(name = "practice_enabled", nullable = false)
