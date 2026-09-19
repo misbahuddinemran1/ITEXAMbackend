@@ -4,6 +4,7 @@ import com.examplatform.modules.written.exam.entity.WrittenExam;
 import com.examplatform.modules.written.exam.enums.ExamStatus;
 import com.examplatform.modules.written.exam.repository.WrittenExamRepository;
 import com.examplatform.modules.written.question.entity.WrittenQuestion;
+import com.examplatform.modules.written.question.entity.WrittenQuestionPart;
 import com.examplatform.modules.written.question.mapper.WrittenQuestionMapper;
 import com.examplatform.modules.written.question.repository.WrittenQuestionRepository;
 import com.examplatform.modules.written.question.request.CreateQuestionRequest;
@@ -44,7 +45,7 @@ public class WrittenQuestionServiceImpl implements WrittenQuestionService {
 
         WrittenQuestion question = questionMapper.toEntity(request);
 
-        // request.autoGenerateAiAnswer=true হলে manual answer + AI answer একসাথেই save হবে
+        // request.autoGenerateAiAnswer=true হলে প্রতিটা part-এর জন্য আলাদা AI answer বানিয়ে নেবে
         if (request.isAutoGenerateAiAnswer()) {
             generateAllAiAnswers(question);
         }
@@ -57,25 +58,16 @@ public class WrittenQuestionServiceImpl implements WrittenQuestionService {
     }
 
     private void generateAllAiAnswers(WrittenQuestion q) {
-        try {
-            if (notBlank(q.getPartAQuestion()) && q.getPartAMaxMark() != null) {
-                q.setPartAAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartAQuestion(), q.getPartAMaxMark().intValue()));
+        if (q.getParts() == null) return;
+        for (WrittenQuestionPart part : q.getParts()) {
+            try {
+                if (notBlank(part.getQuestionText()) && part.getMaxMark() != null) {
+                    part.setAiAnswer(geminiService.generateReferenceAnswer(
+                            q.getStimulus(), part.getQuestionText(), part.getMaxMark().intValue()));
+                }
+            } catch (Exception e) {
+                // AI generate ফেইল করলেও এই part-টা বাদ দিয়ে বাকিগুলো চালিয়ে যাও, question save হোক
             }
-            if (notBlank(q.getPartBQuestion()) && q.getPartBMaxMark() != null) {
-                q.setPartBAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartBQuestion(), q.getPartBMaxMark().intValue()));
-            }
-            if (notBlank(q.getPartCQuestion()) && q.getPartCMaxMark() != null) {
-                q.setPartCAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartCQuestion(), q.getPartCMaxMark().intValue()));
-            }
-            if (notBlank(q.getPartDQuestion()) && q.getPartDMaxMark() != null) {
-                q.setPartDAiAnswer(geminiService.generateReferenceAnswer(
-                        q.getStimulus(), q.getPartDQuestion(), q.getPartDMaxMark().intValue()));
-            }
-        } catch (Exception e) {
-            // AI generate ফেইল করলেও question save হোক, পরে আলাদা endpoint দিয়ে retry করা যাবে
         }
     }
 
@@ -155,53 +147,8 @@ public class WrittenQuestionServiceImpl implements WrittenQuestionService {
         List<WrittenQuestion> questions = questionRepository.findByExamIdOrderByQuestionOrderAsc(examId);
 
         return questions.stream()
-                .map(this::toQuestionWithAnswerResponse)
+                .map(questionMapper::toWithAnswerResponse)
                 .toList();
-    }
-
-    private QuestionWithAnswerResponse toQuestionWithAnswerResponse(WrittenQuestion q) {
-        return QuestionWithAnswerResponse.builder()
-                .id(q.getId())
-                .questionOrder(q.getQuestionOrder())
-                .stimulus(q.getStimulus())
-                .stimulusBn(q.getStimulusBn())
-
-                .partAQuestion(q.getPartAQuestion())
-                .partAAnswer(resolveAnswer(q.getPartAModelAnswer(), q.getPartAAiAnswer()))
-                .partAIsAi(isAiAnswer(q.getPartAModelAnswer(), q.getPartAAiAnswer()))
-                .partAMaxMark(q.getPartAMaxMark())
-
-                .partBQuestion(q.getPartBQuestion())
-                .partBAnswer(resolveAnswer(q.getPartBModelAnswer(), q.getPartBAiAnswer()))
-                .partBIsAi(isAiAnswer(q.getPartBModelAnswer(), q.getPartBAiAnswer()))
-                .partBMaxMark(q.getPartBMaxMark())
-
-                .partCQuestion(q.getPartCQuestion())
-                .partCAnswer(resolveAnswer(q.getPartCModelAnswer(), q.getPartCAiAnswer()))
-                .partCIsAi(isAiAnswer(q.getPartCModelAnswer(), q.getPartCAiAnswer()))
-                .partCMaxMark(q.getPartCMaxMark())
-
-                .partDQuestion(q.getPartDQuestion())
-                .partDAnswer(resolveAnswer(q.getPartDModelAnswer(), q.getPartDAiAnswer()))
-                .partDIsAi(isAiAnswer(q.getPartDModelAnswer(), q.getPartDAiAnswer()))
-                .partDMaxMark(q.getPartDMaxMark())
-
-                .totalMaxMark(q.getTotalMaxMark())
-                .build();
-    }
-
-    private String resolveAnswer(String modelAnswer, String aiAnswer) {
-        if (modelAnswer != null && !modelAnswer.isBlank()) {
-            return modelAnswer;
-        }
-        return aiAnswer;
-    }
-
-    private Boolean isAiAnswer(String modelAnswer, String aiAnswer) {
-        if (modelAnswer != null && !modelAnswer.isBlank()) {
-            return false;
-        }
-        return aiAnswer != null && !aiAnswer.isBlank();
     }
 
     private WrittenQuestion getQuestionOrThrow(String questionId) {

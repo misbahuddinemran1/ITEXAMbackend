@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Builder
@@ -18,17 +19,6 @@ public class QuestionStudentResponse {
     private String stimulus;
     private String stimulusBn;
 
-    private String partAQuestion;
-    private BigDecimal partAMaxMark;
-
-    private String partBQuestion;
-    private BigDecimal partBMaxMark;
-
-    private String partCQuestion;
-    private BigDecimal partCMaxMark;
-
-    private String partDQuestion;
-    private BigDecimal partDMaxMark;
-
+    private List<QuestionPartStudentResponse> parts;
     private BigDecimal totalMaxMark;
 }

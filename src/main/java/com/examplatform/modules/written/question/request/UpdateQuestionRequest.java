@@ -3,7 +3,7 @@ package com.examplatform.modules.written.question.request;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -21,23 +21,6 @@ public class UpdateQuestionRequest {
     private String board;
     private Integer examYear;
 
-    private String partAQuestion;
-    private String partAModelAnswer;
-    private String partAMarkingScheme;
-    private BigDecimal partAMaxMark;
-
-    private String partBQuestion;
-    private String partBModelAnswer;
-    private String partBMarkingScheme;
-    private BigDecimal partBMaxMark;
-
-    private String partCQuestion;
-    private String partCModelAnswer;
-    private String partCMarkingScheme;
-    private BigDecimal partCMaxMark;
-
-    private String partDQuestion;
-    private String partDModelAnswer;
-    private String partDMarkingScheme;
-    private BigDecimal partDMaxMark;
+    // null পাঠালে parts অপরিবর্তিত থাকবে; non-null পাঠালে পুরনো সব part বাদ দিয়ে এগুলো বসবে
+    private List<QuestionPartRequest> parts;
 }

@@ -3,7 +3,7 @@ package com.examplatform.modules.written.question.request;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -27,23 +27,6 @@ public class CreateQuestionRequest {
     // ---- create করার সময়ই AI answer বানিয়ে নেবে কিনা ----
     private boolean autoGenerateAiAnswer;
 
-    private String partAQuestion;
-    private String partAModelAnswer;
-    private String partAMarkingScheme;
-    private BigDecimal partAMaxMark;
-
-    private String partBQuestion;
-    private String partBModelAnswer;
-    private String partBMarkingScheme;
-    private BigDecimal partBMaxMark;
-
-    private String partCQuestion;
-    private String partCModelAnswer;
-    private String partCMarkingScheme;
-    private BigDecimal partCMaxMark;
-
-    private String partDQuestion;
-    private String partDModelAnswer;
-    private String partDMarkingScheme;
-    private BigDecimal partDMaxMark;
+    // ---- Flexible sub-questions (BCS Written স্টাইল, ২/৩/যেকোনো সংখ্যক part) ----
+    private List<QuestionPartRequest> parts;
 }
