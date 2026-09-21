@@ -18,6 +18,12 @@ public class AdminStatsResponse {
     private long totalExamSessions;
     private long newUsersThisMonth;
     private long todayExamAttempts;
+    private long newUsersToday;
+    private long liveExamsNow;
+    private long liveExamStudents;
+    private long pendingWrittenSubmissions;
+    private long pendingReviewQuestions;
+    private long draftQuestions;
     private List<RecentUser> recentUsers;
     private List<RecentExam> recentExams;
     private List<ChartData> last7DaysExams;

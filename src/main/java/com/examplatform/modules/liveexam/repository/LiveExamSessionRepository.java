@@ -15,6 +15,9 @@ public interface LiveExamSessionRepository extends JpaRepository<LiveExamSession
 
     Optional<LiveExamSession> findByExamIdAndUserId(String examId, String userId);
 
+    // Dashboard: এই মুহূর্তে কতজন পরীক্ষা দিচ্ছে (IN_PROGRESS)
+    long countByStatus(LiveExamSession.Status status);
+
     // Grace period পার হয়ে যাওয়া disconnected sessions (scheduler এর জন্য)
     @Query("SELECT s FROM LiveExamSession s WHERE s.status = 'DISCONNECTED' " +
             "AND s.disconnectedAt <= :cutoff")

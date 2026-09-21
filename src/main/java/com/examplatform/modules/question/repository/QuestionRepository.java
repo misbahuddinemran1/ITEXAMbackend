@@ -28,5 +28,8 @@ public interface QuestionRepository
 
     Optional<Question> findByContentHash(String contentHash);
 
+    // Dashboard / Review Queue: নির্দিষ্ট status এ কতগুলো প্রশ্ন আছে
+    long countByStatus(Question.QuestionStatus status);
+
     boolean existsByContentHash(String contentHash);
 }

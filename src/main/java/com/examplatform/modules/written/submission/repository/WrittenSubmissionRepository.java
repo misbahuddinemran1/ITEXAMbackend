@@ -9,6 +9,9 @@ import java.util.Optional;
 
 public interface WrittenSubmissionRepository extends JpaRepository<WrittenSubmission, String> {
 
+    // Dashboard: marking-এর অপেক্ষায় থাকা (practice নয় এমন) submission
+    long countByIsPracticeModeFalseAndStatusIn(List<SubmissionStatus> statuses);
+
     boolean existsByExamIdAndUserIdAndCycleNumberAndIsPracticeModeFalse(
             String examId, String userId, Integer cycleNumber);
 

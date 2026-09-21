@@ -1,6 +1,13 @@
 package com.examplatform.modules.admin.service;
 
 import com.examplatform.modules.admin.dto.AdminStatsResponse;
+import com.examplatform.modules.exam.entity.Exam;
+import com.examplatform.modules.exam.repository.ExamRepository;
+import com.examplatform.modules.liveexam.entity.LiveExamSession;
+import com.examplatform.modules.liveexam.repository.LiveExamSessionRepository;
+import com.examplatform.modules.question.entity.Question;
+import com.examplatform.modules.written.submission.enums.SubmissionStatus;
+import com.examplatform.modules.written.submission.repository.WrittenSubmissionRepository;
 import com.examplatform.modules.exam.repository.ExamSessionRepository;
 import com.examplatform.modules.question.repository.QuestionRepository;
 import com.examplatform.modules.subscription.entity.UserSubscription;
@@ -9,7 +16,10 @@ import com.examplatform.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +32,9 @@ public class AdminStatsService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final QuestionRepository questionRepository;
     private final ExamSessionRepository examSessionRepository;
+    private final ExamRepository examRepository;
+    private final LiveExamSessionRepository liveExamSessionRepository;
+    private final WrittenSubmissionRepository writtenSubmissionRepository;
 
     public AdminStatsResponse getStats() {
         LocalDateTime startOfMonth = LocalDateTime.now()
@@ -77,6 +90,16 @@ public class AdminStatsService {
                     .build());
         }
 
+        // চলমান Live Exam: আজ (বাংলাদেশ সময়) PUBLISHED আর এখন সময়-জানালার ভেতরে থাকা exam
+        ZoneId bdZone = ZoneId.of("Asia/Dhaka");
+        LocalDate todayBd = LocalDate.now(bdZone);
+        LocalTime nowBd = LocalTime.now(bdZone);
+        long liveExamsNow = examRepository
+                .findByPublishStatusAndExamDate(Exam.PublishStatus.PUBLISHED, todayBd)
+                .stream()
+                .filter(e -> !nowBd.isBefore(e.getStartTime()) && !nowBd.isAfter(e.getEndTime()))
+                .count();
+
         return AdminStatsResponse.builder()
                 .totalUsers(userRepository.count())
                 .activeSubscriptions(userSubscriptionRepository
@@ -85,6 +108,17 @@ public class AdminStatsService {
                 .totalExamSessions(examSessionRepository.count())
                 .newUsersThisMonth(userRepository.countByCreatedAtAfter(startOfMonth))
                 .todayExamAttempts(examSessionRepository.countByCreatedAtAfter(startOfToday))
+                .newUsersToday(userRepository.countByCreatedAtAfter(startOfToday))
+                .liveExamsNow(liveExamsNow)
+                .liveExamStudents(liveExamSessionRepository
+                        .countByStatus(LiveExamSession.Status.IN_PROGRESS))
+                .pendingWrittenSubmissions(writtenSubmissionRepository
+                        .countByIsPracticeModeFalseAndStatusIn(
+                                List.of(SubmissionStatus.SUBMITTED, SubmissionStatus.UNDER_REVIEW)))
+                .pendingReviewQuestions(questionRepository
+                        .countByStatus(Question.QuestionStatus.UNDER_REVIEW))
+                .draftQuestions(questionRepository
+                        .countByStatus(Question.QuestionStatus.DRAFT))
                 .recentUsers(recentUsers)
                 .recentExams(recentExams)
                 .last7DaysExams(chartData)
