@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/superadmin/**").hasRole("SUPER_ADMIN")
                 .anyRequest().permitAll()
             )
             .addFilterBefore(
