@@ -806,6 +806,7 @@ public ExamResponse extendExam(String examId, LocalDate newExamDate,
                         : String.valueOf(exam.getMaxAttempts()))
                 .isPremiumOnly(exam.isPremiumOnly())
                 .totalAttempts(attempts)
+                .targetLevels(exam.getTargetLevels())
                 .build();
     }
 
