@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +67,15 @@ public class GlobalExceptionHandler {
                         .message("Validation failed")
                         .data(errors)
                         .build());
+    }
+
+    // কোনো controller এ না মেলা URL (client ভুল/পুরনো path ডাকলে): ১০০ লাইনের stack trace ও 500 নয়, সাধারণ 404
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException ex) {
+        log.warn("No endpoint found: {}", ex.getResourcePath());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("Endpoint not found: /" + ex.getResourcePath()));
     }
 
     @ExceptionHandler(Exception.class)
