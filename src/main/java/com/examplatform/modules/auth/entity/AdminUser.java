@@ -38,6 +38,6 @@ public class AdminUser extends BaseEntity {
     private LocalDateTime lastLoginAt;
 
     public enum AdminRole {
-        SUPER_ADMIN, CONTENT_MANAGER, REVIEWER
+        SUPER_ADMIN, ADMIN, CONTENT_MANAGER, REVIEWER
     }
 }
