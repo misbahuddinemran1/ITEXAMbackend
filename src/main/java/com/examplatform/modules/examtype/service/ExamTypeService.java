@@ -26,6 +26,15 @@ public class ExamTypeService {
                 .toList();
     }
 
+    // Super Admin panel: active + inactive সব category দেখানোর জন্য
+    public List<ExamTypeResponse> getAllExamTypesAdmin() {
+        return examTypeRepository
+                .findAllByOrderByName()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public ExamTypeResponse getExamType(String id) {
         return toResponse(findById(id));
     }
@@ -67,6 +76,9 @@ public class ExamTypeService {
         examType.setCode(request.getCode().toUpperCase());
         examType.setDescription(request.getDescription());
         examType.setConductingBody(request.getConductingBody());
+        if (request.getIsActive() != null) {
+            examType.setActive(request.getIsActive());
+        }
 
         return toResponse(examTypeRepository.save(examType));
     }

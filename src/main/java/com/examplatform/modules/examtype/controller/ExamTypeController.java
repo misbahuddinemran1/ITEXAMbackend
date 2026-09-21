@@ -34,6 +34,14 @@ public class ExamTypeController {
         );
     }
 
+    @GetMapping("/admin/exam-types")
+    public ResponseEntity<ApiResponse<List<ExamTypeResponse>>>
+            getAllExamTypesAdmin() {
+        return ResponseEntity.ok(
+            ApiResponse.success(examTypeService.getAllExamTypesAdmin())
+        );
+    }
+
     @PostMapping("/admin/exam-types")
     public ResponseEntity<ApiResponse<ExamTypeResponse>>
             createExamType(

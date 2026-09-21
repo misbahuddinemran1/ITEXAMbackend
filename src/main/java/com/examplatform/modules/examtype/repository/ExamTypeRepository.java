@@ -11,6 +11,8 @@ public interface ExamTypeRepository
 
     List<ExamType> findAllByIsActiveOrderByName(boolean isActive);
 
+    List<ExamType> findAllByOrderByName();
+
     Optional<ExamType> findByCode(String code);
 
     boolean existsByCode(String code);

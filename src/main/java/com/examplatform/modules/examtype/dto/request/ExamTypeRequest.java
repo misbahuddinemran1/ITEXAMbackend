@@ -27,4 +27,7 @@ public class ExamTypeRequest {
 
     @Size(max = 200)
     private String conductingBody;
+
+    // admin edit থেকে category আবার active/deactivate করার জন্য (optional, null হলে অপরিবর্তিত)
+    private Boolean isActive;
 }
