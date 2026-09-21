@@ -11,6 +11,7 @@ import com.examplatform.modules.exam.repository.ExamTopicConfigRepository;
 import com.examplatform.modules.exam.entity.ExamAttemptHistory;
 import com.examplatform.modules.liveexam.dto.*;
 import com.examplatform.modules.liveexam.entity.LiveExamSession;
+import com.examplatform.modules.leaderboard.service.OverallLeaderboardService;
 import com.examplatform.modules.liveexam.repository.LiveExamSessionRepository;
 import com.examplatform.modules.question.entity.Option;
 import com.examplatform.modules.question.entity.Question;
@@ -54,6 +55,7 @@ public class LiveExamService {
     private final SubjectRepository subjectRepository;
     private final ChapterRepository chapterRepository;
     private final TopicRepository topicRepository;
+    private final OverallLeaderboardService overallLeaderboardService;
 
 @Transactional(readOnly = true)
 public LiveExamStartResponse getPracticeQuestions(String examId) {
@@ -449,6 +451,9 @@ public LiveExamStartResponse getPracticeQuestions(String examId) {
                 .submittedAt(session.getSubmittedAt())
                 .build();
         attemptHistoryRepository.save(history);
+
+        // Leaderboard আপডেট: exam commit হওয়ার পর আলাদা thread এ চলে, কখনো exam জমা আটকায় না
+        overallLeaderboardService.scheduleStatsUpdate(session.getUserId(), history);
 
         log.info("Live exam closed: session={}, user={}, exam={}, cycle={}, status={}, marks={}, correct={}, wrong={}, skip={}, timeTaken={}s",
                 session.getId(), session.getUserId(), exam.getId(), session.getCycleNumber(), finalStatus, obtained,

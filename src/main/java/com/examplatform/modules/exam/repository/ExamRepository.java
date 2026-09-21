@@ -29,6 +29,13 @@ public interface ExamRepository extends JpaRepository<Exam, String> {
             LocalDate examDate
     );
 
+    // Leaderboard (RELATIVE threshold): নির্দিষ্ট সময়ে কতগুলো published exam
+    long countByPublishStatusAndExamDateBetween(
+            Exam.PublishStatus status,
+            LocalDate start,
+            LocalDate end
+    );
+
     // Exam code check
     Optional<Exam> findByExamCode(String examCode);
 
