@@ -33,7 +33,7 @@ public class WrittenExam {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "education_level", length = 10)
+    @Column(name = "education_level", length = 30)
     private String educationLevel;
 
     // Knowledge Hierarchy (MCQ module-এর মতো)
