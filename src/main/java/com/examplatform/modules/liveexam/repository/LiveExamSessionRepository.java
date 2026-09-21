@@ -15,6 +15,9 @@ public interface LiveExamSessionRepository extends JpaRepository<LiveExamSession
 
     Optional<LiveExamSession> findByExamIdAndUserId(String examId, String userId);
 
+    // User এর শেষ হওয়া live session সংখ্যা
+    long countByUserIdAndStatusIn(String userId, List<LiveExamSession.Status> statuses);
+
     // Dashboard: এই মুহূর্তে কতজন পরীক্ষা দিচ্ছে (IN_PROGRESS)
     long countByStatus(LiveExamSession.Status status);
 

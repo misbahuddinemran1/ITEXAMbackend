@@ -23,6 +23,13 @@ public interface ExamAttemptHistoryRepository extends JpaRepository<ExamAttemptH
     // User কতবার attempt করেছে
     long countByUserIdAndExamId(String userId, String examId);
 
+    // User মোট কতটি attempt করেছে (retake সহ)
+    long countByUserId(String userId);
+
+    // User কতগুলো আলাদা exam দিয়েছে (retake গোনা হয় না)
+    @Query("SELECT COUNT(DISTINCT h.examId) FROM ExamAttemptHistory h WHERE h.userId = :userId")
+    long countDistinctExamsByUserId(@Param("userId") String userId);
+
     // User এর latest attempt
     Optional<ExamAttemptHistory> findTopByUserIdAndExamIdOrderByAttemptNumberDesc(
             String userId, String examId

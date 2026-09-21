@@ -1,6 +1,8 @@
 package com.examplatform.modules.user.repository;
 
 import com.examplatform.modules.user.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,6 +35,13 @@ public interface UserRepository extends JpaRepository<User, String> {
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :kw, '%')) OR " +
             "u.phone LIKE CONCAT('%', :kw, '%')")
     List<User> searchUsers(@Param("kw") String kw);
+
+    // Admin list এর জন্য: page অনুযায়ী DB থেকেই আনা (সব user মেমরিতে নয়)
+    @Query("SELECT u FROM User u WHERE " +
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :kw, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :kw, '%')) OR " +
+            "u.phone LIKE CONCAT('%', :kw, '%')")
+    Page<User> searchUsersPaged(@Param("kw") String kw, Pageable pageable);
 
 
 

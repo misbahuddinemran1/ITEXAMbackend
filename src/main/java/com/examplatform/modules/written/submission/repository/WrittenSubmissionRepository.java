@@ -9,6 +9,9 @@ import java.util.Optional;
 
 public interface WrittenSubmissionRepository extends JpaRepository<WrittenSubmission, String> {
 
+    // User এর জমা দেওয়া (practice নয়) written submission সংখ্যা
+    long countByUserIdAndIsPracticeModeFalseAndStatusIn(String userId, List<SubmissionStatus> statuses);
+
     // Dashboard: marking-এর অপেক্ষায় থাকা (practice নয় এমন) submission
     long countByIsPracticeModeFalseAndStatusIn(List<SubmissionStatus> statuses);
 

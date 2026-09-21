@@ -25,6 +25,7 @@ public interface ExamSessionRepository extends JpaRepository<ExamSession, String
 
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
     long countByUserId(String userId);
+    long countByUserIdAndStatusIn(String userId, List<ExamSession.Status> statuses);
 
     List<ExamSession> findTop5ByOrderByCreatedAtDesc();
     // এই methods যোগ করুন existing repository এ:
