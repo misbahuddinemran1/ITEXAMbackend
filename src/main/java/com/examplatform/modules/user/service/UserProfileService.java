@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserProfileService {
 
+    private final UserDeviceService userDeviceService;
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -100,6 +102,9 @@ public class UserProfileService {
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+
+        // Password বদলালে সব device এর fingerprint login বাতিল
+        userDeviceService.revokeAll(userId);
 
         return ApiResponse.success("Password সফলভাবে পরিবর্তন হয়েছে", null);
     }
