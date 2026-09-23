@@ -68,6 +68,16 @@ public class UserAuthService {
             throw new ValidationException("Class ভুল — SSC অথবা HSC দিতে হবে");
         }
 
+        // Target Exam validation (optional)
+        User.TargetExam targetExam = null;
+        if (request.getTargetExam() != null && !request.getTargetExam().isBlank()) {
+            try {
+                targetExam = User.TargetExam.valueOf(request.getTargetExam().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new ValidationException("Target Exam ভুল — সঠিক পরীক্ষা সিলেক্ট করুন");
+            }
+        }
+
         // User build
         User user = User.builder()
                 .fullName(request.getFullName())
@@ -78,6 +88,7 @@ public class UserAuthService {
                 .authProvider(User.AuthProvider.LOCAL)
                 .institutionName(request.getInstitutionName())
                 .educationLevel(educationLevel)
+                .targetExam(targetExam)
                 .session(request.getSession())
                 .district(request.getDistrict())
                 .referredBy(request.getReferredBy())

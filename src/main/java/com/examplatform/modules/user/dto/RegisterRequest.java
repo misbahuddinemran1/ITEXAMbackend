@@ -14,4 +14,5 @@ public class RegisterRequest {
     private String session;          // যেমন 2024-2025
     private String district;         // ৮টা বিভাগ/জেলার একটা
     private String referredBy;
+    private String targetExam;  // optional: BCS_ICT, NTRCA_ICT, BANK_IT, GOVT_IT, OTHER
 }
