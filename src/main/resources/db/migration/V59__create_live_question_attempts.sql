@@ -1,6 +1,6 @@
 -- V59__create_live_question_attempts.sql
 
-CREATE TABLE live_question_attempts (
+CREATE TABLE IF NOT EXISTS live_question_attempts (
     id                  VARCHAR(36)     NOT NULL DEFAULT gen_random_uuid()::text,
     session_id          VARCHAR(36)     NOT NULL,
     user_id             VARCHAR(36)     NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE live_question_attempts (
         FOREIGN KEY (question_id) REFERENCES questions(id)
 );
 
-CREATE INDEX idx_lqa_session  ON live_question_attempts (session_id);
-CREATE INDEX idx_lqa_user     ON live_question_attempts (user_id);
-CREATE INDEX idx_lqa_question ON live_question_attempts (question_id);
-CREATE INDEX idx_lqa_exam     ON live_question_attempts (exam_id);
+CREATE INDEX IF NOT EXISTS idx_lqa_session  ON live_question_attempts (session_id);
+CREATE INDEX IF NOT EXISTS idx_lqa_user     ON live_question_attempts (user_id);
+CREATE INDEX IF NOT EXISTS idx_lqa_question ON live_question_attempts (question_id);
+CREATE INDEX IF NOT EXISTS idx_lqa_exam     ON live_question_attempts (exam_id);
