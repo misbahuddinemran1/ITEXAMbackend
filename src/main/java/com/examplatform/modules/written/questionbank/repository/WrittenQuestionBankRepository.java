@@ -14,4 +14,8 @@ public interface WrittenQuestionBankRepository extends JpaRepository<WrittenQues
     List<WrittenQuestionBank> findByIsBoardQuestionTrue();
 
     List<WrittenQuestionBank> findByBoardAndExamYear(String board, Integer examYear);
+
+    List<WrittenQuestionBank> findByBoard(String board);
+
+    List<WrittenQuestionBank> findByExamYear(Integer examYear);
 }

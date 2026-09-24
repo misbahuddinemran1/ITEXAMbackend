@@ -39,6 +39,13 @@ public class AdminWrittenQuestionBankController {
         return bankService.getBySubjectAndChapter(subjectId, chapterId);
     }
 
+    @GetMapping("/filter")
+    public List<BankQuestionResponse> filterByBoard(
+            @RequestParam(required = false) String board,
+            @RequestParam(required = false) Integer examYear) {
+        return bankService.getByBoardFilter(board, examYear);
+    }
+
     @GetMapping("/{id}")
     public BankQuestionResponse getById(@PathVariable String id) {
         return bankService.getById(id);

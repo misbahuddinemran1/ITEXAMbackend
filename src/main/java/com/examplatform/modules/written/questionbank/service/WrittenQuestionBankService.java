@@ -89,6 +89,22 @@ public class WrittenQuestionBankService {
                 .map(bankMapper::toResponse).toList();
     }
 
+    public List<BankQuestionResponse> getByBoardFilter(String board, Integer examYear) {
+        boolean hasBoard = board != null && !board.isBlank();
+        boolean hasYear = examYear != null;
+        List<WrittenQuestionBank> list;
+        if (hasBoard && hasYear) {
+            list = bankRepository.findByBoardAndExamYear(board, examYear);
+        } else if (hasBoard) {
+            list = bankRepository.findByBoard(board);
+        } else if (hasYear) {
+            list = bankRepository.findByExamYear(examYear);
+        } else {
+            list = bankRepository.findByIsBoardQuestionTrue();
+        }
+        return list.stream().map(bankMapper::toResponse).toList();
+    }
+
     public BankQuestionResponse getById(String id) {
         return bankMapper.toResponse(getBankOrThrow(id));
     }
