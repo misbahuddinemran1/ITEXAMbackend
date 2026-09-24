@@ -37,6 +37,9 @@ public class QuestionAdminController {
             @RequestParam(required = false) String chapterId,
             @RequestParam(required = false) String topicId,
             @RequestParam(required = false) Integer difficulty,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
@@ -48,6 +51,9 @@ public class QuestionAdminController {
                             chapterId,
                             topicId,
                             difficulty,
+                            year,
+                            source,
+                            keyword,
                             page,
                             size
                     )

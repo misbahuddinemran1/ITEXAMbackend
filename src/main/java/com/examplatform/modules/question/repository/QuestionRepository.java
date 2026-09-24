@@ -17,13 +17,20 @@ public interface QuestionRepository
             "(:subjectId IS NULL OR q.subject.id = :subjectId) AND " +
             "(:chapterId IS NULL OR q.chapter.id = :chapterId) AND " +
             "(:topicId IS NULL OR q.topic.id = :topicId) AND " +
-            "(:difficulty IS NULL OR q.difficultyLevel = :difficulty)")
+            "(:difficulty IS NULL OR q.difficultyLevel = :difficulty) AND " +
+            "(:year IS NULL OR q.yearAppeared = :year) AND " +
+            "(:source = '' OR LOWER(q.sourceReference) LIKE LOWER(CONCAT('%', :source, '%'))) AND " +
+            "(:keyword = '' OR LOWER(q.questionText) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(q.questionTextBn) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Question> findWithFilters(
             @Param("status") Question.QuestionStatus status,
             @Param("subjectId") String subjectId,
             @Param("chapterId") String chapterId,
             @Param("topicId") String topicId,
             @Param("difficulty") Integer difficulty,
+            @Param("year") Integer year,
+            @Param("source") String source,
+            @Param("keyword") String keyword,
             Pageable pageable);
 
     Optional<Question> findByContentHash(String contentHash);

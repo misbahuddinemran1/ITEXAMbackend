@@ -206,6 +206,9 @@ public class QuestionService {
             String chapterId,
             String topicId,
             Integer difficulty,
+            Integer year,
+            String source,
+            String keyword,
             int page,
             int size){
 
@@ -226,6 +229,9 @@ public class QuestionService {
                 chapterId,
                 topicId,
                 difficulty,
+                year,
+                source == null ? "" : source.trim(),
+                keyword == null ? "" : keyword.trim(),
                 pageable
         );
 
