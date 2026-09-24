@@ -46,6 +46,9 @@ public interface ExamAttemptHistoryRepository extends JpaRepository<ExamAttemptH
             @Param("examId") String examId
     );
 
+    // sessionId দিয়ে history খুঁজে বের করা (live exam attempt gate check এর জন্য)
+    Optional<ExamAttemptHistory> findBySessionId(String sessionId);
+
     // Exam এর best score
     @Query("SELECT MAX(h.percentage) FROM ExamAttemptHistory h " +
             "WHERE h.userId = :userId AND h.examId = :examId")

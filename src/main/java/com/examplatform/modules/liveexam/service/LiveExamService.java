@@ -11,6 +11,8 @@ import com.examplatform.modules.exam.repository.ExamTopicConfigRepository;
 import com.examplatform.modules.exam.entity.ExamAttemptHistory;
 import com.examplatform.modules.liveexam.dto.*;
 import com.examplatform.modules.liveexam.entity.LiveExamSession;
+import com.examplatform.modules.liveexam.entity.LiveQuestionAttempt;
+import com.examplatform.modules.liveexam.repository.LiveQuestionAttemptRepository;
 import com.examplatform.modules.leaderboard.service.OverallLeaderboardService;
 import com.examplatform.modules.liveexam.repository.LiveExamSessionRepository;
 import com.examplatform.modules.question.entity.Option;
@@ -20,6 +22,8 @@ import com.examplatform.modules.question.repository.QuestionRepository;
 import com.examplatform.modules.taxonomy.repository.SubjectRepository;
 import com.examplatform.modules.taxonomy.repository.ChapterRepository;
 import com.examplatform.modules.taxonomy.repository.TopicRepository;
+import com.examplatform.modules.taxonomy.entity.Subject;
+import com.examplatform.modules.taxonomy.entity.Chapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +53,7 @@ public class LiveExamService {
     private final QuestionRepository questionRepository;
     private final OptionRepository optionRepository;
     private final LiveExamSessionRepository liveSessionRepository;
+    private final LiveQuestionAttemptRepository liveQuestionAttemptRepository;
     private final ExamAttemptHistoryRepository attemptHistoryRepository;
     private final ExamSubjectConfigRepository subjectConfigRepository;
     private final ExamTopicConfigRepository topicConfigRepository;
@@ -403,22 +408,45 @@ public LiveExamStartResponse getPracticeQuestions(String examId) {
         int wrongCount = 0;
         int skipCount = 0;
 
+        List<LiveQuestionAttempt> attemptsToSave = new ArrayList<>();
+
         for (ExamQuestion eq : examQuestions) {
             String selectedOptionId = session.getAnswers().get(eq.getQuestionId());
+
+            LiveQuestionAttempt.LiveQuestionAttemptBuilder attemptBuilder = LiveQuestionAttempt.builder()
+                    .id(UUID.randomUUID().toString())
+                    .sessionId(session.getId())
+                    .userId(session.getUserId())
+                    .examId(exam.getId())
+                    .questionId(eq.getQuestionId());
+
             if (selectedOptionId == null) {
                 skipCount++;
+                attemptsToSave.add(attemptBuilder
+                        .isSkipped(true)
+                        .isCorrect(false)
+                        .build());
                 continue;
             }
 
             Option opt = optionRepository.findById(selectedOptionId).orElse(null);
-            if (opt != null && opt.isCorrect()) {
+            boolean correct = opt != null && opt.isCorrect();
+
+            if (correct) {
                 obtained = obtained.add(eq.getMarks());
                 correctCount++;
             } else {
                 obtained = obtained.subtract(negativePerWrong);
                 wrongCount++;
             }
+
+            attemptsToSave.add(attemptBuilder
+                    .selectedOptionId(selectedOptionId)
+                    .isCorrect(correct)
+                    .isSkipped(false)
+                    .build());
         }
+        liveQuestionAttemptRepository.saveAll(attemptsToSave);
         if (obtained.compareTo(BigDecimal.ZERO) < 0) obtained = BigDecimal.ZERO;
 
         session.setObtainedMarks(obtained);
@@ -844,5 +872,336 @@ public LiveExamStartResponse getPracticeQuestions(String examId) {
             .negativeMarking(exam.getNegativeMarking())
                 .questions(questions)
                 .build();
+    }
+
+    // ============================================
+    // 11. QUESTION STATS & USER HISTORY
+    // ============================================
+    @Transactional(readOnly = true)
+    public QuestionStatsResponse getQuestionStats(String questionId) {
+        long correct = liveQuestionAttemptRepository.countByQuestionIdAndIsCorrectTrue(questionId);
+        long wrong = liveQuestionAttemptRepository.countByQuestionIdAndIsCorrectFalse(questionId);
+        long skipped = liveQuestionAttemptRepository.countByQuestionIdAndIsSkippedTrue(questionId);
+
+        String questionText = questionRepository.findById(questionId)
+                .map(Question::getQuestionText)
+                .orElse(null);
+
+        return buildStatsResponse(questionId, questionText, correct, wrong, skipped);
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuestionStatsResponse> getHardestQuestions(int minAttempts, int limit) {
+        List<LiveQuestionAttemptRepository.QuestionAggregateProjection> rows =
+                liveQuestionAttemptRepository.findHardestQuestions(minAttempts, limit);
+
+        List<QuestionStatsResponse> result = new ArrayList<>();
+        for (var row : rows) {
+            String questionText = questionRepository.findById(row.getQuestionId())
+                    .map(Question::getQuestionText)
+                    .orElse(null);
+            result.add(buildStatsResponse(
+                    row.getQuestionId(), questionText,
+                    row.getCorrectCount(), row.getWrongCount(), row.getSkipCount()));
+        }
+        return result;
+    }
+
+    private QuestionStatsResponse buildStatsResponse(String questionId, String questionText,
+                                                       long correct, long wrong, long skipped) {
+        long total = correct + wrong;
+        double accuracy = total > 0 ? (correct * 100.0 / total) : 0.0;
+
+        return QuestionStatsResponse.builder()
+                .questionId(questionId)
+                .questionText(questionText)
+                .totalAttempts(total + skipped)
+                .totalCorrect(correct)
+                .totalWrong(wrong)
+                .totalSkipped(skipped)
+                .accuracyRate(Math.round(accuracy * 100.0) / 100.0)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserQuestionAttemptResponse> getUserAttemptHistory(String userId, Boolean onlyWrong) {
+        return getUserAttemptHistory(userId, onlyWrong, false);
+    }
+
+    // respectPublishGate = true হলে, result publish না হওয়া পর্যন্ত সেই exam-এর attempt গুলো বাদ যাবে
+    @Transactional(readOnly = true)
+    public List<UserQuestionAttemptResponse> getUserAttemptHistory(String userId, Boolean onlyWrong, boolean respectPublishGate) {
+        List<LiveQuestionAttempt> attempts = liveQuestionAttemptRepository.findByUserId(userId);
+        Map<String, Boolean> publishCache = new HashMap<>();
+
+        return attempts.stream()
+                .filter(a -> onlyWrong == null || !onlyWrong || (!a.isCorrect() && !a.isSkipped()))
+                .filter(a -> !respectPublishGate || publishCache.computeIfAbsent(
+                        a.getExamId() + "|" + a.getSessionId(),
+                        k -> isLiveResultPublished(a.getExamId(), a.getSessionId())))
+                .map(a -> {
+                    String questionText = questionRepository.findById(a.getQuestionId())
+                            .map(Question::getQuestionText)
+                            .orElse(null);
+                    String examName = examRepository.findById(a.getExamId())
+                            .map(Exam::getName)
+                            .orElse(null);
+                    return UserQuestionAttemptResponse.builder()
+                            .questionId(a.getQuestionId())
+                            .questionText(questionText)
+                            .examId(a.getExamId())
+                            .examName(examName)
+                            .sessionId(a.getSessionId())
+                            .selectedOptionId(a.getSelectedOptionId())
+                            .isCorrect(a.isCorrect())
+                            .isSkipped(a.isSkipped())
+                            .answeredAt(a.getAnsweredAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    // Live exam এর result publish হয়েছে কিনা
+    private boolean isLiveResultPublished(String examId, String sessionId) {
+        Exam exam = examRepository.findById(examId).orElse(null);
+        if (exam == null || exam.getExamDate() == null || exam.getEndTime() == null) {
+            return true;
+        }
+
+        int currentCycleNumber = exam.getCycleNumber();
+        int attemptNumber = attemptHistoryRepository.findBySessionId(sessionId)
+                .map(ExamAttemptHistory::getAttemptNumber)
+                .orElse(currentCycleNumber);
+
+        boolean attemptedInOlderCycle = attemptNumber < currentCycleNumber;
+        if (attemptedInOlderCycle) {
+            return true;
+        }
+
+        LocalDateTime windowEnd = LocalDateTime.of(exam.getExamDate(), exam.getEndTime());
+        return LocalDateTime.now(BD_ZONE).isAfter(windowEnd);
+    }
+
+    // ============================================
+    // 12. REVISION MODE
+    // ============================================
+    private static final int REVISION_DEFAULT_LIMIT = 20;
+    private static final int REVISION_MAX_LIMIT = 50;
+
+    @Transactional(readOnly = true)
+    public RevisionQuizResponse getRevisionQuestions(String userId, Integer limit) {
+        int cap = (limit == null || limit <= 0) ? REVISION_DEFAULT_LIMIT : Math.min(limit, REVISION_MAX_LIMIT);
+
+        List<UserQuestionAttemptResponse> wrongAttempts = getUserAttemptHistory(userId, true, true);
+
+        Map<String, UserQuestionAttemptResponse> dedup = new LinkedHashMap<>();
+        for (UserQuestionAttemptResponse a : wrongAttempts) {
+            UserQuestionAttemptResponse existing = dedup.get(a.getQuestionId());
+            if (existing == null || (a.getAnsweredAt() != null && existing.getAnsweredAt() != null
+                    && a.getAnsweredAt().isAfter(existing.getAnsweredAt()))) {
+                dedup.put(a.getQuestionId(), a);
+            }
+        }
+
+        List<String> questionIds = new ArrayList<>(dedup.keySet());
+        Collections.shuffle(questionIds);
+        if (questionIds.size() > cap) {
+            questionIds = questionIds.subList(0, cap);
+        }
+
+        List<RevisionQuestionDto> questions = new ArrayList<>();
+        for (String qid : questionIds) {
+            Question q = questionRepository.findById(qid).orElse(null);
+            if (q == null) continue;
+
+            List<Option> options = optionRepository.findAllByQuestionIdOrderByOrderIndex(qid);
+            List<RevisionQuestionDto.OptionDto> optionDtos = options.stream()
+                    .map(o -> RevisionQuestionDto.OptionDto.builder()
+                            .optionId(o.getId())
+                            .optionKey(o.getOptionKey())
+                            .optionText(o.getOptionText())
+                            .optionTextBn(o.getOptionTextBn())
+                            .build())
+                    .collect(Collectors.toList());
+
+            questions.add(RevisionQuestionDto.builder()
+                    .questionId(q.getId())
+                    .questionText(q.getQuestionText())
+                    .questionTextBn(q.getQuestionTextBn())
+                    .options(optionDtos)
+                    .build());
+        }
+
+        return RevisionQuizResponse.builder()
+                .totalQuestions(questions.size())
+                .questions(questions)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public RevisionResultResponse submitRevision(RevisionSubmitRequest request) {
+        List<String> questionIds = request.getQuestionIds();
+        Map<String, String> answers = request.getAnswers() == null ? Map.of() : request.getAnswers();
+
+        if (questionIds == null || questionIds.isEmpty()) {
+            throw new RuntimeException("No questions provided for revision submit.");
+        }
+
+        int correctCount = 0, wrongCount = 0, skipCount = 0;
+        List<RevisionResultResponse.QuestionResultDto> results = new ArrayList<>();
+
+        for (String qid : questionIds) {
+            Question q = questionRepository.findById(qid).orElse(null);
+            if (q == null) continue;
+
+            List<Option> options = optionRepository.findAllByQuestionIdOrderByOrderIndex(qid);
+            Option correct = options.stream().filter(Option::isCorrect).findFirst().orElse(null);
+
+            String selectedId = answers.get(qid);
+            Option selected = selectedId == null ? null : options.stream()
+                    .filter(o -> o.getId().equals(selectedId)).findFirst().orElse(null);
+
+            boolean isCorrect = selected != null && selected.isCorrect();
+            boolean isSkipped = selectedId == null;
+
+            if (isSkipped) skipCount++;
+            else if (isCorrect) correctCount++;
+            else wrongCount++;
+
+            results.add(RevisionResultResponse.QuestionResultDto.builder()
+                    .questionId(q.getId())
+                    .questionText(q.getQuestionText())
+                    .selectedOptionId(selectedId)
+                    .selectedOptionText(selected == null ? null : selected.getOptionText())
+                    .isCorrect(isCorrect)
+                    .isSkipped(isSkipped)
+                    .correctOptionId(correct == null ? null : correct.getId())
+                    .correctOptionText(correct == null ? null : correct.getOptionText())
+                    .explanation(correct == null ? null : correct.getExplanation())
+                    .build());
+        }
+
+        int total = results.size();
+        double accuracy = total > 0 ? (correctCount * 100.0 / total) : 0.0;
+
+        return RevisionResultResponse.builder()
+                .totalQuestions(total)
+                .correctCount(correctCount)
+                .wrongCount(wrongCount)
+                .skipCount(skipCount)
+                .accuracyRate(Math.round(accuracy * 100.0) / 100.0)
+                .questions(results)
+                .build();
+    }
+
+    // ============================================
+    // 13. SUBJECT-WISE / CHAPTER-WISE ACCURACY
+    // ============================================
+    @Transactional(readOnly = true)
+    public List<SubjectAccuracyResponse> getSubjectAccuracy(String userId) {
+        List<UserQuestionAttemptResponse> attempts = getUserAttemptHistory(userId, null, true);
+
+        Map<String, long[]> counters = new LinkedHashMap<>();
+        Map<String, String> subjectNames = new HashMap<>();
+
+        for (UserQuestionAttemptResponse a : attempts) {
+            Question q = questionRepository.findById(a.getQuestionId()).orElse(null);
+            Subject subject = q == null ? null : q.getSubject();
+
+            String subjectId = subject != null ? subject.getId() : "uncategorized";
+            String subjectName = subject != null
+                    ? (subject.getNameBn() != null && !subject.getNameBn().isBlank()
+                        ? subject.getNameBn() : subject.getName())
+                    : "অন্যান্য";
+
+            subjectNames.putIfAbsent(subjectId, subjectName);
+            long[] c = counters.computeIfAbsent(subjectId, k -> new long[3]);
+            if (a.isSkipped()) c[2]++;
+            else if (a.isCorrect()) c[0]++;
+            else c[1]++;
+        }
+
+        List<SubjectAccuracyResponse> result = new ArrayList<>();
+        for (Map.Entry<String, long[]> e : counters.entrySet()) {
+            long correct = e.getValue()[0];
+            long wrong = e.getValue()[1];
+            long skipped = e.getValue()[2];
+            long total = correct + wrong + skipped;
+            double accuracy = total > 0 ? (correct * 100.0 / total) : 0.0;
+
+            result.add(SubjectAccuracyResponse.builder()
+                    .subjectId(e.getKey())
+                    .subjectName(subjectNames.get(e.getKey()))
+                    .totalAttempts(total)
+                    .totalCorrect(correct)
+                    .totalWrong(wrong)
+                    .totalSkipped(skipped)
+                    .accuracyRate(Math.round(accuracy * 100.0) / 100.0)
+                    .build());
+        }
+
+        result.sort(Comparator.comparingDouble(SubjectAccuracyResponse::getAccuracyRate));
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChapterAccuracyResponse> getChapterAccuracy(String userId) {
+        List<UserQuestionAttemptResponse> attempts = getUserAttemptHistory(userId, null, true);
+
+        Map<String, long[]> counters = new LinkedHashMap<>();
+        Map<String, String> chapterNames = new HashMap<>();
+        Map<String, String> chapterSubjectIds = new HashMap<>();
+        Map<String, String> chapterSubjectNames = new HashMap<>();
+
+        for (UserQuestionAttemptResponse a : attempts) {
+            Question q = questionRepository.findById(a.getQuestionId()).orElse(null);
+            Chapter chapter = q == null ? null : q.getChapter();
+            Subject subject = q == null ? null : q.getSubject();
+
+            String chapterId = chapter != null ? chapter.getId() : "uncategorized";
+            String chapterName = chapter != null
+                    ? (chapter.getNameBn() != null && !chapter.getNameBn().isBlank()
+                        ? chapter.getNameBn() : chapter.getName())
+                    : "অন্যান্য";
+
+            String subjectId = subject != null ? subject.getId() : "uncategorized";
+            String subjectName = subject != null
+                    ? (subject.getNameBn() != null && !subject.getNameBn().isBlank()
+                        ? subject.getNameBn() : subject.getName())
+                    : "অন্যান্য";
+
+            chapterNames.putIfAbsent(chapterId, chapterName);
+            chapterSubjectIds.putIfAbsent(chapterId, subjectId);
+            chapterSubjectNames.putIfAbsent(chapterId, subjectName);
+
+            long[] c = counters.computeIfAbsent(chapterId, k -> new long[3]);
+            if (a.isSkipped()) c[2]++;
+            else if (a.isCorrect()) c[0]++;
+            else c[1]++;
+        }
+
+        List<ChapterAccuracyResponse> result = new ArrayList<>();
+        for (Map.Entry<String, long[]> e : counters.entrySet()) {
+            long correct = e.getValue()[0];
+            long wrong = e.getValue()[1];
+            long skipped = e.getValue()[2];
+            long total = correct + wrong + skipped;
+            double accuracy = total > 0 ? (correct * 100.0 / total) : 0.0;
+
+            result.add(ChapterAccuracyResponse.builder()
+                    .chapterId(e.getKey())
+                    .chapterName(chapterNames.get(e.getKey()))
+                    .subjectId(chapterSubjectIds.get(e.getKey()))
+                    .subjectName(chapterSubjectNames.get(e.getKey()))
+                    .totalAttempts(total)
+                    .totalCorrect(correct)
+                    .totalWrong(wrong)
+                    .totalSkipped(skipped)
+                    .accuracyRate(Math.round(accuracy * 100.0) / 100.0)
+                    .build());
+        }
+
+        result.sort(Comparator.comparingDouble(ChapterAccuracyResponse::getAccuracyRate));
+        return result;
     }
 }
