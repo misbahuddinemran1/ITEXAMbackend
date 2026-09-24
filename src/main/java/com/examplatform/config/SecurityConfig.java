@@ -36,6 +36,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/superadmin/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "CONTENT_MANAGER", "REVIEWER")
                 .anyRequest().permitAll()
             )
             .addFilterBefore(
