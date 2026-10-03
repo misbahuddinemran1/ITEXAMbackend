@@ -348,6 +348,24 @@ public LiveExamStartResponse getPracticeQuestions(String examId) {
         LiveExamSession session = getOwnedSession(sessionId, userId);
         ensureActive(session);
 
+        String qid = req.getQuestionId();
+        if (qid == null || qid.isBlank()) {
+            throw new RuntimeException("Question ID is required.");
+        }
+        if (!examQuestionRepository.existsByExamIdAndQuestionId(session.getExamId(), qid)) {
+            throw new RuntimeException("This question does not belong to this exam.");
+        }
+        String selOpt = req.getSelectedOptionId();
+        if (selOpt != null) {
+            boolean validOption = optionRepository
+                    .findAllByQuestionIdOrderByOrderIndex(qid)
+                    .stream()
+                    .anyMatch(o -> selOpt.equals(o.getId()));
+            if (!validOption) {
+                throw new RuntimeException("Invalid option for this question.");
+            }
+        }
+
         Map<String, String> answers = new HashMap<>(session.getAnswers());
         if (req.getSelectedOptionId() == null) {
             answers.remove(req.getQuestionId());
