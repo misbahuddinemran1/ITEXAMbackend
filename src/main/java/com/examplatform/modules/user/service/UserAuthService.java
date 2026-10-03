@@ -12,6 +12,7 @@ import com.examplatform.modules.user.dto.RegisterRequest;
 import com.examplatform.modules.user.entity.User;
 import com.examplatform.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import com.examplatform.infrastructure.security.LoginAttemptService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class UserAuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LoginAttemptService loginAttemptService;
     private final JwtTokenProvider jwtTokenProvider;
     private final SubscriptionService subscriptionService;
 
@@ -108,6 +110,23 @@ public class UserAuthService {
     // ─── Login ────────────────────────────────────────────────
     @Transactional
     public ApiResponse<AuthResponse> login(LoginRequest request) {
+        String id = request.getIdentifier();
+        if (id == null || id.isBlank()) {
+            return doLogin(request);
+        }
+        String key = "user:" + id.trim().toLowerCase();
+        loginAttemptService.checkAllowed(key);
+        try {
+            ApiResponse<AuthResponse> res = doLogin(request);
+            loginAttemptService.recordSuccess(key);
+            return res;
+        } catch (ValidationException | ResourceNotFoundException e) {
+            loginAttemptService.recordFailure(key);
+            throw e;
+        }
+    }
+
+    private ApiResponse<AuthResponse> doLogin(LoginRequest request) {
 
         if (request.getIdentifier() == null || request.getIdentifier().isBlank()) {
             throw new ValidationException("Phone নম্বর দিতে হবে");

@@ -7,6 +7,7 @@ import com.examplatform.modules.auth.dto.LoginResponse;
 import com.examplatform.modules.auth.entity.AdminUser;
 import com.examplatform.modules.auth.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
+import com.examplatform.infrastructure.security.LoginAttemptService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,26 @@ public class AuthService {
     private final AdminUserRepository adminUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final LoginAttemptService loginAttemptService;
 
     public LoginResponse login(LoginRequest request) {
+        String u = request.getUsername();
+        if (u == null || u.isBlank()) {
+            return doLogin(request);
+        }
+        String key = "admin:" + u.trim().toLowerCase();
+        loginAttemptService.checkAllowed(key);
+        try {
+            LoginResponse res = doLogin(request);
+            loginAttemptService.recordSuccess(key);
+            return res;
+        } catch (ResourceNotFoundException e) {
+            loginAttemptService.recordFailure(key);
+            throw e;
+        }
+    }
+
+    private LoginResponse doLogin(LoginRequest request) {
 
         AdminUser admin = adminUserRepository
                 .findByUsername(request.getUsername())
