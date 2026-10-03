@@ -3,6 +3,7 @@ package com.examplatform.modules.challenge.controller;
 import com.examplatform.modules.challenge.dto.*;
 import com.examplatform.modules.challenge.service.ChallengeService;
 import lombok.RequiredArgsConstructor;
+import com.examplatform.infrastructure.security.CurrentUserId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class ChallengeController {
     private final ChallengeService challengeService;
 
     @PostMapping("/friend")
-    public ResponseEntity<?> createFriend(@RequestHeader("X-User-Id") String userId,
+    public ResponseEntity<?> createFriend(@CurrentUserId String userId,
                                            @RequestBody CreateFriendChallengeRequest req) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
@@ -32,7 +33,7 @@ public class ChallengeController {
 
     
     @PostMapping("/{id}/accept")
-    public ResponseEntity<?> accept(@RequestHeader("X-User-Id") String userId, @PathVariable String id) {
+    public ResponseEntity<?> accept(@CurrentUserId String userId, @PathVariable String id) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
                     "data", challengeService.acceptChallenge(userId, id)));
@@ -43,7 +44,7 @@ public class ChallengeController {
     }
 
         @PutMapping("/{id}")
-    public ResponseEntity<?> editFriend(@RequestHeader("X-User-Id") String userId,
+    public ResponseEntity<?> editFriend(@CurrentUserId String userId,
                                          @PathVariable String id,
                                          @RequestBody CreateFriendChallengeRequest req) {
         try {
@@ -56,7 +57,7 @@ public class ChallengeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteFriend(@RequestHeader("X-User-Id") String userId, @PathVariable String id) {
+    public ResponseEntity<?> deleteFriend(@CurrentUserId String userId, @PathVariable String id) {
         try {
             challengeService.deleteFriendChallenge(userId, id);
             return ResponseEntity.ok(Map.of("success", true));
@@ -66,7 +67,7 @@ public class ChallengeController {
         }
     }
     @PostMapping("/{id}/decline")
-    public ResponseEntity<?> decline(@RequestHeader("X-User-Id") String userId, @PathVariable String id) {
+    public ResponseEntity<?> decline(@CurrentUserId String userId, @PathVariable String id) {
         try {
             challengeService.declineChallenge(userId, id);
             return ResponseEntity.ok(Map.of("success", true));
@@ -77,7 +78,7 @@ public class ChallengeController {
     }
 
     @PostMapping("/quick-match")
-    public ResponseEntity<?> quickMatch(@RequestHeader("X-User-Id") String userId,
+    public ResponseEntity<?> quickMatch(@CurrentUserId String userId,
                                          @RequestBody QuickMatchRequest req) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
@@ -89,7 +90,7 @@ public class ChallengeController {
     }
 
     @GetMapping("/{id}/match-status")
-    public ResponseEntity<?> matchStatus(@RequestHeader("X-User-Id") String userId, @PathVariable String id) {
+    public ResponseEntity<?> matchStatus(@CurrentUserId String userId, @PathVariable String id) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
                     "data", challengeService.checkMatchStatus(userId, id)));
@@ -100,7 +101,7 @@ public class ChallengeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getDetail(@RequestHeader("X-User-Id") String userId, @PathVariable String id) {
+    public ResponseEntity<?> getDetail(@CurrentUserId String userId, @PathVariable String id) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
                     "data", challengeService.getChallengeDetail(userId, id)));
@@ -111,7 +112,7 @@ public class ChallengeController {
     }
 
     @PostMapping("/{id}/attempt")
-    public ResponseEntity<?> submitAttempt(@RequestHeader("X-User-Id") String userId,
+    public ResponseEntity<?> submitAttempt(@CurrentUserId String userId,
                                             @PathVariable String id,
                                             @RequestBody SubmitAttemptRequest req) {
         try {
@@ -124,7 +125,7 @@ public class ChallengeController {
     }
 
     @GetMapping("/{id}/result")
-    public ResponseEntity<?> getResult(@RequestHeader("X-User-Id") String userId, @PathVariable String id) {
+    public ResponseEntity<?> getResult(@CurrentUserId String userId, @PathVariable String id) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
                     "data", challengeService.getResult(userId, id)));
@@ -135,7 +136,7 @@ public class ChallengeController {
     }
 
     @GetMapping("/search-friends")
-    public ResponseEntity<?> searchFriends(@RequestHeader("X-User-Id") String userId,
+    public ResponseEntity<?> searchFriends(@CurrentUserId String userId,
                                             @RequestParam String q) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
@@ -147,7 +148,7 @@ public class ChallengeController {
     }
 
     @GetMapping("/mine")
-    public ResponseEntity<?> getMine(@RequestHeader("X-User-Id") String userId,
+    public ResponseEntity<?> getMine(@CurrentUserId String userId,
                                       @RequestParam(required = false) String status) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
@@ -170,7 +171,7 @@ public class ChallengeController {
     }
 
     @GetMapping("/my-stats")
-    public ResponseEntity<?> getMyStats(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getMyStats(@CurrentUserId String userId) {
         try {
             return ResponseEntity.ok(Map.of("success", true,
                     "data", challengeService.getMyStats(userId)));

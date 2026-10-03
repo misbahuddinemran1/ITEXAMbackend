@@ -2,6 +2,7 @@ package com.examplatform.modules.liveexam.controller;
 import com.examplatform.modules.liveexam.dto.*;
 import com.examplatform.modules.liveexam.service.LiveExamService;
 import lombok.RequiredArgsConstructor;
+import com.examplatform.infrastructure.security.CurrentUserId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,7 +22,7 @@ public class LiveExamController {
 
     // GET /api/v1/live-exams/today  — visibility list (respects class/category filter)
     @GetMapping("/today")
-    public ResponseEntity<?> getTodaysLiveExams(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getTodaysLiveExams(@CurrentUserId String userId) {
         try {
             String userLevel = getUserEducationLevel(userId);
             List<LiveExamSummaryResponse> data = liveExamService.getTodaysLiveExams(userLevel, userId);
@@ -33,7 +34,7 @@ public class LiveExamController {
     }
     // GET /api/v1/live-exams/category/{category}  — SUBJECT_WISE / CHAPTER_WISE / TOPIC_WISE (live+finished)
     @GetMapping("/category/{category}")
-    public ResponseEntity<?> getExamsByCategory(@PathVariable String category, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getExamsByCategory(@PathVariable String category, @CurrentUserId String userId) {
         try {
             String userLevel = getUserEducationLevel(userId);
             List<LiveExamSummaryResponse> data = liveExamService.getExamsByCategory(category, userLevel, userId);
@@ -46,7 +47,7 @@ public class LiveExamController {
 
     // POST /api/v1/live-exams/{examId}/start
     @PostMapping("/{examId}/start")
-    public ResponseEntity<?> start(@PathVariable String examId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> start(@PathVariable String examId, @CurrentUserId String userId) {
         try {
             LiveExamStartResponse resp = liveExamService.startExam(examId, userId);
             return ResponseEntity.ok(Map.of("success", true, "data", resp));
@@ -58,7 +59,7 @@ public class LiveExamController {
 
     // GET /api/v1/live-exams/{examId}/resume
     @GetMapping("/{examId}/resume")
-    public ResponseEntity<?> resume(@PathVariable String examId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> resume(@PathVariable String examId, @CurrentUserId String userId) {
         try {
             LiveExamStartResponse resp = liveExamService.resumeExam(examId, userId);
             return ResponseEntity.ok(Map.of("success", true, "data", resp));
@@ -70,7 +71,7 @@ public class LiveExamController {
 
     // POST /api/v1/live-exams/session/{sessionId}/heartbeat
     @PostMapping("/session/{sessionId}/heartbeat")
-    public ResponseEntity<?> heartbeat(@PathVariable String sessionId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> heartbeat(@PathVariable String sessionId, @CurrentUserId String userId) {
         try {
             liveExamService.heartbeat(sessionId, userId);
             return ResponseEntity.ok(Map.of("success", true));
@@ -81,7 +82,7 @@ public class LiveExamController {
 
     // POST /api/v1/live-exams/session/{sessionId}/disconnect
     @PostMapping("/session/{sessionId}/disconnect")
-    public ResponseEntity<?> disconnect(@PathVariable String sessionId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> disconnect(@PathVariable String sessionId, @CurrentUserId String userId) {
         try {
             liveExamService.markDisconnected(sessionId, userId);
             return ResponseEntity.ok(Map.of("success", true));
@@ -94,7 +95,7 @@ public class LiveExamController {
     @PostMapping("/session/{sessionId}/answer")
     public ResponseEntity<?> submitAnswer(
             @PathVariable String sessionId,
-            @RequestHeader("X-User-Id") String userId,
+            @CurrentUserId String userId,
             @RequestBody SubmitLiveAnswerRequest request) {
         try {
             liveExamService.submitAnswer(sessionId, userId, request);
@@ -107,7 +108,7 @@ public class LiveExamController {
 
     // POST /api/v1/live-exams/session/{sessionId}/finish
     @PostMapping("/session/{sessionId}/finish")
-    public ResponseEntity<?> finish(@PathVariable String sessionId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> finish(@PathVariable String sessionId, @CurrentUserId String userId) {
         try {
             liveExamService.finishExam(sessionId, userId);
             return ResponseEntity.ok(Map.of("success", true, "message", "Exam submitted. Result will be available after 11:59 PM."));
@@ -119,7 +120,7 @@ public class LiveExamController {
 
     // GET /api/v1/live-exams/{examId}/result  — time-gated
     @GetMapping("/{examId}/result")
-    public ResponseEntity<?> getResult(@PathVariable String examId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getResult(@PathVariable String examId, @CurrentUserId String userId) {
         try {
             LiveExamResultResponse result = liveExamService.getResult(examId, userId);
             return ResponseEntity.ok(Map.of("success", true, "data", result));
@@ -130,7 +131,7 @@ public class LiveExamController {
 
     // GET /api/v1/live-exams/{examId}/leaderboard  — time-gated
     @GetMapping("/{examId}/leaderboard")
-    public ResponseEntity<?> getLeaderboard(@PathVariable String examId, @RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getLeaderboard(@PathVariable String examId, @CurrentUserId String userId) {
         try {
             List<LeaderboardEntryResponse> board = liveExamService.getLeaderboard(examId, userId);
             return ResponseEntity.ok(Map.of("success", true, "data", board));
@@ -163,7 +164,7 @@ public class LiveExamController {
 
     // GET /api/v1/live-exams/finished — window পার হওয়া exam list
     @GetMapping("/finished")
-    public ResponseEntity<?> getFinishedExams(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getFinishedExams(@CurrentUserId String userId) {
         try {
             String userLevel = getUserEducationLevel(userId);
             List<LiveExamSummaryResponse> data = liveExamService.getFinishedExams(userLevel, userId);
@@ -215,7 +216,7 @@ public ResponseEntity<?> getPracticeQuestions(@PathVariable String examId) {
     // GET /api/v1/live-exams/my-attempts?onlyWrong=true
     @GetMapping("/my-attempts")
     public ResponseEntity<?> getMyAttemptHistory(
-            @RequestHeader("X-User-Id") String userId,
+            @CurrentUserId String userId,
             @RequestParam(required = false) Boolean onlyWrong) {
         try {
             List<UserQuestionAttemptResponse> data = liveExamService.getUserAttemptHistory(userId, onlyWrong, true);
@@ -229,7 +230,7 @@ public ResponseEntity<?> getPracticeQuestions(@PathVariable String examId) {
     // GET /api/v1/live-exams/revision-questions?limit=20
     @GetMapping("/revision-questions")
     public ResponseEntity<?> getRevisionQuestions(
-            @RequestHeader("X-User-Id") String userId,
+            @CurrentUserId String userId,
             @RequestParam(required = false) Integer limit) {
         try {
             RevisionQuizResponse data = liveExamService.getRevisionQuestions(userId, limit);
@@ -243,7 +244,7 @@ public ResponseEntity<?> getPracticeQuestions(@PathVariable String examId) {
     // POST /api/v1/live-exams/revision-submit
     @PostMapping("/revision-submit")
     public ResponseEntity<?> submitRevision(
-            @RequestHeader("X-User-Id") String userId,
+            @CurrentUserId String userId,
             @RequestBody RevisionSubmitRequest request) {
         try {
             RevisionResultResponse result = liveExamService.submitRevision(request);
@@ -256,7 +257,7 @@ public ResponseEntity<?> getPracticeQuestions(@PathVariable String examId) {
 
     // GET /api/v1/live-exams/subject-accuracy
     @GetMapping("/subject-accuracy")
-    public ResponseEntity<?> getSubjectAccuracy(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getSubjectAccuracy(@CurrentUserId String userId) {
         try {
             List<SubjectAccuracyResponse> data = liveExamService.getSubjectAccuracy(userId);
             return ResponseEntity.ok(Map.of("success", true, "data", data));
@@ -268,7 +269,7 @@ public ResponseEntity<?> getPracticeQuestions(@PathVariable String examId) {
 
     // GET /api/v1/live-exams/chapter-accuracy
     @GetMapping("/chapter-accuracy")
-    public ResponseEntity<?> getChapterAccuracy(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<?> getChapterAccuracy(@CurrentUserId String userId) {
         try {
             List<ChapterAccuracyResponse> data = liveExamService.getChapterAccuracy(userId);
             return ResponseEntity.ok(Map.of("success", true, "data", data));

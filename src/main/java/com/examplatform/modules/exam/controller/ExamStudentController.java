@@ -3,6 +3,7 @@ package com.examplatform.modules.exam.controller;
 import com.examplatform.modules.exam.dto.response.*;
 import com.examplatform.modules.exam.service.ExamStudentService;
 import lombok.RequiredArgsConstructor;
+import com.examplatform.infrastructure.security.CurrentUserId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class ExamStudentController {
     // ============================================
     @GetMapping("/available")
     public ResponseEntity<?> getAvailableExams(
-            @RequestHeader("X-User-Id") String userId) {
+            @CurrentUserId String userId) {
         try {
             List<AvailableExamResponse> exams =
                     examStudentService.getAvailableExams(userId);
@@ -49,7 +50,7 @@ public class ExamStudentController {
     // ============================================
     @GetMapping("/available/type/{examType}")
     public ResponseEntity<?> getAvailableExamsByType(
-            @RequestHeader("X-User-Id") String userId,
+            @CurrentUserId String userId,
             @PathVariable String examType) {
         try {
             List<AvailableExamResponse> exams =
@@ -77,7 +78,7 @@ public class ExamStudentController {
     @GetMapping("/{examId}")
     public ResponseEntity<?> getExamDetail(
             @PathVariable String examId,
-            @RequestHeader("X-User-Id") String userId) {
+            @CurrentUserId String userId) {
         try {
             AvailableExamResponse response =
                     examStudentService.getExamDetail(examId, userId);
@@ -99,7 +100,7 @@ public class ExamStudentController {
     @GetMapping("/{examId}/can-attempt")
     public ResponseEntity<?> canAttempt(
             @PathVariable String examId,
-            @RequestHeader("X-User-Id") String userId) {
+            @CurrentUserId String userId) {
         try {
             boolean canAttempt =
                     examStudentService.canUserAttempt(examId, userId);
@@ -124,7 +125,7 @@ public class ExamStudentController {
     // ============================================
     @GetMapping("/history")
     public ResponseEntity<?> getAttemptHistory(
-            @RequestHeader("X-User-Id") String userId) {
+            @CurrentUserId String userId) {
         try {
             List<ExamAttemptHistoryResponse> history =
                     examStudentService.getUserAttemptHistory(userId);
@@ -151,7 +152,7 @@ public class ExamStudentController {
     @GetMapping("/{examId}/history")
     public ResponseEntity<?> getExamAttemptHistory(
             @PathVariable String examId,
-            @RequestHeader("X-User-Id") String userId) {
+            @CurrentUserId String userId) {
         try {
             List<ExamAttemptHistoryResponse> history =
                     examStudentService.getUserExamAttemptHistory(userId, examId);
