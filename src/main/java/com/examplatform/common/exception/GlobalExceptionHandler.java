@@ -87,6 +87,18 @@ public class GlobalExceptionHandler {
                         ex.getReason() != null ? ex.getReason() : "Error"));
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException ex) {
+        if (ApiErrors.isBusiness(ex)) {
+            log.warn("Business error: {}", ex.getMessage());
+        } else {
+            log.error("Unexpected error: ", ex);
+        }
+        return ResponseEntity
+                .status(ApiErrors.status(ex))
+                .body(ApiResponse.error(ApiErrors.safeMessage(ex)));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("Unexpected error: ", ex);

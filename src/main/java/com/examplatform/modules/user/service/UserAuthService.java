@@ -163,10 +163,10 @@ public class UserAuthService {
     private User findByEmailOrPhone(String identifier) {
         if (identifier.contains("@")) {
             return userRepository.findByEmail(identifier)
-                    .orElseThrow(() -> new ResourceNotFoundException("Email বা Password ভুল হয়েছে"));
+                    .orElseThrow(() -> new ValidationException("Email বা Password ভুল হয়েছে"));
         } else {
             return userRepository.findByPhone(identifier)
-                    .orElseThrow(() -> new ResourceNotFoundException("Phone বা Password ভুল হয়েছে"));
+                    .orElseThrow(() -> new ValidationException("Phone বা Password ভুল হয়েছে"));
         }
     }
 
